@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FARO — Sector board · Brazilian banks</title>
+<meta name="description" content="A quarterly read on the Brazilian banking system: 34 conglomerates from BCB IF.Data, mapped by assets, loans, deposits, equity or net income and coloured by the ratio you choose.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .mast{ display: grid; grid-template-columns: minmax(0,1fr) 300px; }
+  /* the mast already closes with a hairline - no doubled rule here */
+  .mast__l{ padding: 36px 28px 32px; }
+  .mast h1{ font-size: clamp(30px, 3.4vw, 46px); font-weight: 700; letter-spacing: -0.035em; margin: 14px 0 16px; max-width: 19ch; }
+  .mast .sub{ max-width: 60ch; }
+  .mast__r{ border-left: 1px solid var(--border); padding: 30px 24px; display: grid; align-content: start; gap: 0; }
+  .mast__h{ font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted-dim); margin-bottom: 4px; }
+  .stamp{ display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; }
+  .stamp span:first-child{ color: var(--muted); }
+  .stamp span:last-child{ font-variant-numeric: tabular-nums; }
+  .stamp:last-child{ border-bottom: 0; }
+  .tmhint{ font-family: var(--font-mono); font-size: 9.5px; color: var(--muted-dim); padding: 0 28px 10px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .ladder--inset .lrow{ padding-left: 16px; padding-right: 16px; }
+  .ladder--inset .ladder__head{ padding-left: 16px; padding-right: 16px; }
+  .side__spark{ margin: 0; }
+  @media (max-width: 1240px){ .mast{ grid-template-columns: minmax(0,1fr) 258px; } }
+  @media (max-width: 980px){
+    .mast{ grid-template-columns: minmax(0,1fr); }
+    .mast__l{ padding: 24px 16px 20px; }
+    .mast__r{ border-left: 0; border-top: 1px solid var(--border); padding: 14px 16px; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+    .mast__h{ grid-column: 1 / -1; }
+    .tmhint{ padding: 0 16px 8px; gap: 8px; }
+    .side__spark svg{ width: 100%; }
+  }
+</style>
+</head>
+<body data-page="board" data-title="Sector board" data-kicker="IF.Data · Brazil">
+
+<aside class="rail" id="rail"></aside>
+
+<div class="main">
+  <header class="topbar" id="topbar"></header>
+
+  <main class="content">
+
+    <section class="mast" data-od-id="board-mast">
+      <div class="mast__l">
+        <p class="eyebrow">Prudential conglomerates · twelve-month flows</p>
+        <h1>The system, sized and coloured by whatever you ask.</h1>
+        <p class="sub">Area is the balance-sheet line you pick — assets, loans, deposits, equity or net income. Fill is the ratio you pick. The same 34 institutions, read five ways, and every tile opens the bank behind it.</p>
+      </div>
+      <div class="mast__r" id="stampBlock">
+        <p class="mast__h">System · <span id="stampQ">—</span></p>
+        <div class="stamp"><span>Net interest income</span><span id="stNII">—</span></div>
+        <div class="stamp"><span>Provision charge</span><span id="stProv">—</span></div>
+        <div class="stamp"><span>Net income</span><span id="stNI">—</span></div>
+        <div class="stamp"><span>Median Basel</span><span id="stBasel">—</span></div>
+        <div class="stamp"><span>Institutions</span><span id="stampN">34</span></div>
+        <div class="stamp"><span>Restated prints</span><span><a id="stampAudit" href="data-integrity.html" style="border-bottom:1px dotted var(--border-strong)">—</a></span></div>
+        <div class="stamp"><span>Source</span><span>BCB IF.Data</span></div>
+      </div>
+    </section>
+
+    <section class="kpis" id="kpis" data-od-id="board-kpis" aria-label="System indicators"></section>
+
+    <section data-od-id="board-map">
+      <div class="sec" style="padding-bottom:14px">
+        <div class="sec__head" style="margin-bottom:0">
+          <p class="eyebrow">01 · The map</p>
+          <h2 style="margin-left:2px" id="mapTitle">Where the balance sheet sits</h2>
+          <div class="spacer"></div>
+          <div class="tm-legend">
+            <span class="tm-legend__k" id="lgKey">ROE</span>
+            <span class="tm-legend__lb" id="lgLo">—</span>
+            <span class="tm-legend__bar" id="lgBar"></span>
+            <span class="tm-legend__lb" id="lgHi">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mapctl" role="group" aria-label="Map encoding">
+        <div class="mapctl__f">
+          <span class="eyebrow">Area =</span>
+          <div class="seg" id="segSize"></div>
+        </div>
+        <div class="mapctl__f">
+          <span class="eyebrow">Colour =</span>
+          <div class="seg" id="segColor"></div>
+        </div>
+        <div class="mapctl__f mapctl__f--end">
+          <span class="eyebrow">Read as</span>
+          <div class="seg" id="segView"></div>
+        </div>
+      </div>
+
+      <p class="tmhint" id="mapHint"></p>
+
+      <div class="tm-wrap">
+        <div class="tm" id="mapHostWrap"><div class="tm__frame" id="tm"></div></div>
+        <aside class="side" id="side" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="board-movers">
+      <div class="sec__head">
+        <p class="eyebrow">02 · Movement</p>
+        <h2>Who moved, quarter on quarter</h2>
+        <div class="spacer"></div>
+        <div class="seg" id="segMover" style="margin-right:8px"></div>
+        <span class="footnote" id="moversQ"></span>
+      </div>
+      <div class="movers" id="movers"></div>
+    </section>
+
+    <section class="sec" data-od-id="board-desk">
+      <div class="sec__head">
+        <p class="eyebrow">03 · Desk</p>
+        <h2>Seven ways into the same data</h2>
+      </div>
+      <nav class="desk" aria-label="Desk sections">
+        <a href="pnl-lab.html" data-od-id="desk-pnl">
+          <span class="desk__n">02</span>
+          <span class="desk__t">Income lab</span>
+          <span class="desk__d">The 12-month income bridge — then a DuPont waterfall that walks the top line into ROE, and the same factors attributed to the move.</span>
+          <span class="desk__f">34 banks →</span>
+        </a>
+        <a href="capital-lab.html" data-od-id="desk-capital">
+          <span class="desk__n">03</span>
+          <span class="desk__t">Capital lab</span>
+          <span class="desk__d">Basel and CET1 against RWA density, capital headroom, and RAROC — return on the capital that carries the risk.</span>
+          <span class="desk__f">34 banks →</span>
+        </a>
+        <a href="bank-dossier.html" data-od-id="desk-dossier">
+          <span class="desk__n">04</span>
+          <span class="desk__t">Bank dossier</span>
+          <span class="desk__d">One institution against its cohort: percentile rulers, thirteen quarters, funding stack.</span>
+          <span class="desk__f">34 dossiers →</span>
+        </a>
+        <a href="peer-matrix.html" data-od-id="desk-peers">
+          <span class="desk__n">05</span>
+          <span class="desk__t">Peer matrix</span>
+          <span class="desk__d">Every bank, every ratio, sortable. Basel, RWA and RAROC now sit beside ROE. Export the screen as CSV.</span>
+          <span class="desk__f">18 columns →</span>
+        </a>
+        <a href="credit-risk.html" data-od-id="desk-credit">
+          <span class="desk__n">06</span>
+          <span class="desk__t">Credit &amp; risk</span>
+          <span class="desk__d">Household and corporate NPL, the defaulted book bank by bank, coverage, and the six retail modalities behind them.</span>
+          <span class="desk__f">13 quarters →</span>
+        </a>
+        <a href="ifrs-bridge.html" data-od-id="desk-bridge">
+          <span class="desk__n">07</span>
+          <span class="desk__t">IFRS bridge</span>
+          <span class="desk__d">IF.Data against what the banks actually reported, line by line, with the reason for each gap.</span>
+          <span class="desk__f">26 lines →</span>
+        </a>
+        <a href="data-integrity.html" data-od-id="desk-audit">
+          <span class="desk__n">08</span>
+          <span class="desk__t">Data integrity</span>
+          <span class="desk__d">Fourteen validation rules, every print they restated, the field dictionary and coverage by quarter.</span>
+          <span class="desk__f">14 rules →</span>
+        </a>
+      </nav>
+      <div style="margin-top:22px; display:flex; gap:16px; align-items:center; flex-wrap:wrap">
+        <p class="footnote" style="max-width:74ch">Twelve-month flows ending at the selected quarter. Rates are as reported to IF.Data and not restated; system aggregates are weighted averages of reported ratios — see definitions for the weights and for the income bridge.</p>
+        <button class="btn btn--sm" id="defsBtn2" style="margin-left:auto">Definitions</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/breaks.js"></script>
+<script src="assets/validate.js"></script>
+<script src="assets/capital.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  const F = window.Faro, P = F.P, LAST = F.LAST;
+  const { pct, pctNum, bn, pp, qLabel, dirClass, esc } = F.fmt;
+
+  const sizeDef = () => F.SIZES.find(s => s.k === F.state.sz) || F.SIZES[0];
+  const colorDef = () => F.COLORS.find(c => c.k === F.state.cl) || F.COLORS[0];
+  const metricVal = (b, p) => F.valueOf(b, colorDef(), p);
+
+  /* ---------- controls ---------- */
+  function renderControls(){
+    const sz = sizeDef().k, cl = colorDef().k, vm = F.state.vm;
+    document.getElementById('segSize').innerHTML = F.SIZES.map(s =>
+      `<button data-sz="${s.k}" aria-pressed="${s.k === sz}">${s.l}</button>`).join('');
+    document.getElementById('segColor').innerHTML = F.COLORS.map(c =>
+      `<button data-cl="${c.k}" aria-pressed="${c.k === cl}">${c.l}</button>`).join('');
+    document.getElementById('segView').innerHTML = [
+      ['map', 'Map'], ['ladder', 'Ladder']
+    ].map(([k, l]) => `<button data-vm="${k}" aria-pressed="${k === vm}">${l}</button>`).join('');
+    document.getElementById('segSize').querySelectorAll('button').forEach(b => {
+      b.onclick = () => F.setMap({ sz: b.dataset.sz });
+    });
+    document.getElementById('segColor').querySelectorAll('button').forEach(b => {
+      b.onclick = () => F.setMap({ cl: b.dataset.cl });
+    });
+    document.getElementById('segView').querySelectorAll('button').forEach(b => {
+      b.onclick = () => F.setMap({ vm: b.dataset.vm });
+    });
+    document.getElementById('mapTitle').textContent = F.state.vm === 'ladder'
+      ? 'The same field, ranked one institution per line'
+      : 'Where the balance sheet sits, and what it earns';
+  }
+
+  /* ---------- KPI strip ----------
+     Five system readings, each a door into the screen that takes the figure
+     apart. The spark is the history up to the selected quarter and the cursor
+     scrubs it: hover prints the level and its own move, the footer states what
+     the whole window did. */
+  const SPARK = { w: 420, h: 46, pad: 4 };
+  const KPI_LINK = {
+    a:   ['peer-matrix.html', 'Open the peer matrix'],
+    roe: ['pnl-lab.html#dupont', 'Open the ROE decomposition'],
+    nim: ['pnl-lab.html#bridge', 'Open the income lab'],
+    cor: ['credit-risk.html#cost', 'Open cost of risk'],
+    cov: ['credit-risk.html#coverage', 'Open the coverage panel']
+  };
+  let kpiSeries = {};
+
+  function renderKPIs(){
+    const banks = F.list(), p = F.state.p;
+    const aggs = P.map((_, i) => F.agg(banks, i));
+    const now = aggs[p];
+    const prev = p > 0 ? aggs[p - 1] : null;
+    const cells = [
+      { k: 'Total assets', id: 'assets', v: bn(now.a), u: 'R$ bn', d: prev && prev.a ? now.a / prev.a - 1 : null, type: 'pct', s: 'a' },
+      { k: 'Aggregate ROE', id: 'roe', v: pct(now.roe), u: '12M', d: prev ? now.roe - prev.roe : null, type: 'pp', s: 'roe' },
+      { k: 'Net interest margin', id: 'nim', v: pct(now.nim), u: '12M', d: prev ? now.nim - prev.nim : null, type: 'pp', s: 'nim' },
+      { k: 'Cost of risk', id: 'cost-of-risk', v: pct(now.cor), u: '12M', d: prev ? now.cor - prev.cor : null, type: 'pp', s: 'cor', badUp: true },
+      { k: 'Provision coverage', id: 'coverage', v: pct(now.cov), u: '12M', d: prev ? now.cov - prev.cov : null, type: 'ppn', s: 'cov' }
+    ];
+
+    kpiSeries = {};
+    cells.forEach(c => { kpiSeries[c.s] = aggs.slice(0, p + 1).map(a => a[c.s]); });
+
+    document.getElementById('kpis').innerHTML = cells.map(c => {
+      const series = kpiSeries[c.s];
+      const ok = series.filter(v => v != null);
+      const n = ok.length;
+      const dv = c.d == null ? null : Math.abs(c.d) < 5e-4 ? 0 : c.d;
+      const dir = c.type === 'ppn' ? 'flat' : c.badUp ? (dv > 0 ? 'down' : dv < 0 ? 'up' : 'flat') : dirClass(dv);
+      const stroke = dir === 'up' ? 'var(--pos)' : dir === 'down' ? 'var(--neg)' : 'var(--muted)';
+      const fill = dir === 'up' ? 'var(--pos-soft)' : dir === 'down' ? 'var(--neg-soft)' : 'var(--muted-soft)';
+      const svg = n > 1 ? F.spark(series, { w: SPARK.w, h: SPARK.h, pad: SPARK.pad, fluid: true, color: stroke, fill, dot: false, rule: true }) : '';
+      const first = n > 1 ? ok[0] : null, last = n ? ok[n - 1] : null;
+      const win = first == null ? null : c.s === 'a' ? last / first - 1 : last - first;
+      const winTxt = win == null ? (n === 1 ? 'first print' : 'not published') : (c.s === 'a'
+        ? (win > 0 ? '+' : win < 0 ? '−' : '') + Math.abs(win * 100).toFixed(0) + '%'
+        : pp(win) + ' pp') + ` · ${n}Q`;
+      const dtxt = dv == null ? '—' : c.type === 'pct'
+        ? (dv > 0 ? '+' : dv < 0 ? '−' : '') + Math.abs(dv * 100).toFixed(1) + '%'
+        : pp(dv) + ' pp';
+      const link = KPI_LINK[c.s];
+      const cls = dir;
+      return `<a class="kpi" href="${link[0]}" data-od-id="kpi-${c.id}" data-key="${c.s}" data-label="${esc(c.k)}"
+        aria-label="${esc(c.k)} ${c.v}${c.u === 'R$ bn' ? ' billion reais' : ''} at ${qLabel(P[p])}, ${c.d == null ? 'no prior print' : dtxt + ' quarter on quarter'}. ${link[1]}.">
+        <span class="kpi__k"><span class="kpi__l">${c.k}</span><span class="kpi__u">${c.u}</span></span>
+        <span class="kpi__v">${c.v}</span>
+        <span class="kpi__f">
+          <span class="kpi__d ${cls}">${dtxt}</span>
+          <span class="kpi__n">QoQ</span>
+          <span class="kpi__r" title="Change across the ${n} quarters shown">${winTxt}</span>
+        </span>
+        <span class="kpi__spark" aria-hidden="true" title="${n === 1 ? 'No history before the first print' : 'Not published for this selection'}">${svg || '<span class="kpi__none"></span>'}<i class="kpi__x"></i></span>
+      </a>`;
+    }).join('');
+
+    document.querySelectorAll('#kpis .kpi').forEach(card => {
+      const key = card.dataset.key, series = kpiSeries[key] || [], n = series.length;
+      const spark = card.querySelector('.kpi__spark'), xEl = card.querySelector('.kpi__x');
+      if (!spark || !xEl || n < 2) return;
+      const idxAt = clientX => {
+        const r = spark.getBoundingClientRect();
+        const f = Math.min(1, Math.max(0, (clientX - r.left) / Math.max(1, r.width)));
+        let i = Math.round(f * (n - 1));
+        if (series[i] == null){
+          for (let d = 1; d < n; d++){
+            if (i - d >= 0 && series[i - d] != null) return i - d;
+            if (i + d < n && series[i + d] != null) return i + d;
+          }
+          return null;
+        }
+        return i;
+      };
+      spark.addEventListener('mousemove', e => {
+        const i = idxAt(e.clientX);
+        if (i == null) return;
+        xEl.style.left = ((SPARK.pad + (i / (n - 1)) * (SPARK.w - SPARK.pad * 2)) / SPARK.w * 100).toFixed(2) + '%';
+        const v = series[i], pv = i > 0 ? series[i - 1] : null;
+        const d = pv == null ? null : key === 'a' ? v / pv - 1 : v - pv;
+        const dv = d == null ? null : Math.abs(d) < 5e-4 ? 0 : d;
+        const dtxt = dv == null ? 'no prior print' : key === 'a'
+          ? (dv > 0 ? '+' : dv < 0 ? '−' : '') + Math.abs(dv * 100).toFixed(1) + '%'
+          : pp(dv) + ' pp';
+        const cls = dv == null ? 'flat' : dirClass(key === 'cor' ? -dv : dv);
+        F.tip(`<div class="tt">${esc(card.dataset.label)}</div>
+          <div class="ts">${qLabel(P[i])} · 12 months</div>
+          <div class="tr"><span>Level</span><span>${key === 'a' ? bn(v) + ' bn' : pct(v)}</span></div>
+          <div class="tr"><span>QoQ</span><span class="${cls}">${dtxt}</span></div>`, e.clientX, e.clientY);
+      });
+      spark.addEventListener('mouseleave', F.untip);
+    });
+
+    const pl = F.pnlSys(banks, p);
+    document.getElementById('stampQ').textContent = qLabel(P[p]);
+    document.getElementById('stampN').textContent = banks.filter(b => b.a[p] != null).length;
+    const capB = window.FARO_CAPITAL ? banks.map(b => F.capVal(b.id, 'basel', p)).filter(v => v != null) : [];
+    const stB = document.getElementById('stBasel');
+    if (stB) stB.textContent = capB.length ? pct(F.median(capB), 2) : '—';
+    const audit = document.getElementById('stampAudit');
+    if (audit && F.QA) audit.textContent = F.QA.summary().errors;
+    if (pl){
+      document.getElementById('stNII').textContent = bn(pl.nii) + ' bn';
+      document.getElementById('stProv').textContent = '−' + bn(pl.prov) + ' bn';
+      document.getElementById('stNI').textContent = bn(pl.ni) + ' bn';
+    }
+  }
+
+  /* ---------- treemap ---------- */
+  function squarify(children, x, y, w, h, out){
+    const total = children.reduce((s, c) => s + c.value, 0);
+    if (!total || w <= 0 || h <= 0) return;
+    let items = children.map(c => ({ ref: c, area: c.value / total * w * h }));
+    let cx = x, cy = y, cw = w, ch = h;
+    const worst = (row, side) => {
+      const sum = row.reduce((s, r) => s + r.area, 0);
+      const mx = Math.max(...row.map(r => r.area));
+      const mn = Math.min(...row.map(r => r.area));
+      return Math.max((side * side * mx) / (sum * sum), (sum * sum) / (side * side * mn));
+    };
+    while (items.length){
+      const side = Math.min(cw, ch);
+      const row = [items[0]];
+      let k = 1;
+      while (k < items.length && worst(row.concat(items[k]), side) <= worst(row, side)) { row.push(items[k]); k++; }
+      const rowArea = row.reduce((s, r) => s + r.area, 0);
+      if (cw >= ch){
+        const th = rowArea / ch;
+        let off = cy;
+        row.forEach(r => { const rh = (r.area / rowArea) * ch; out.push(Object.assign({}, r.ref, { x: cx, y: off, w: th, h: rh })); off += rh; });
+        cx += th; cw -= th;
+      } else {
+        const th = rowArea / cw;
+        let off = cx;
+        row.forEach(r => { const rh = (r.area / rowArea) * cw; out.push(Object.assign({}, r.ref, { x: off, y: cy, w: rh, h: th })); off += rh; });
+        cy += th; ch -= th;
+      }
+      items = items.slice(k);
+    }
+  }
+
+  const shortName = n => n.replace(/^Banco /, '').replace(/ S\.A\.$/, '').replace(/^Banco do /, '');
+
+  function tooltipFor(b, p){
+    const sd = sizeDef();
+    const g = F.gradeOf(b.id);
+    return `<div class="tt">${esc(b.name)}</div>
+      <div class="ts">${esc(b.cat)} · ${qLabel(P[p])} · quality ${g.grade}</div>
+      <div class="tr"><span>${sd.l}</span><span>${bn(F.val(b, sd.k, p))} bn</span></div>
+      <div class="tr"><span>${colorDef().l}</span><span>${colorDef().delta ? pp(metricVal(b, p)) + ' pp' : pct(metricVal(b, p))}</span></div>
+      <div class="tr"><span>Net income 12M</span><span>${bn(F.val(b, 'ni', p))} bn</span></div>
+      <div class="tr"><span>Cost of risk</span><span>${pct(F.val(b, 'cor', p))}</span></div>
+      <div class="tr"><span>Efficiency</span><span>${pct(F.val(b, 'eff', p))}</span></div>`;
+  }
+
+  function renderTreemap(banks, p){
+    const host = document.getElementById('tm');
+    const W = host.clientWidth || 800, H = host.clientHeight || 470;
+    const sd = sizeDef();
+    const usable = banks.filter(b => F.val(b, sd.k, p) != null && F.val(b, sd.k, p) > 0);
+    if (!usable.length){
+      host.innerHTML = '<div class="empty">No institution reports this line in this quarter.</div>';
+      return;
+    }
+    const sorted = usable.slice().sort((a, b) => F.val(b, sd.k, p) - F.val(a, sd.k, p));
+    const rects = [];
+    squarify(sorted.map(b => ({ value: F.val(b, sd.k, p), bank: b })), 0, 0, W, H, rects);
+    host.innerHTML = rects.map(r => {
+      const b = r.bank, v = metricVal(b, p), col = scale.get(v);
+      const x = r.x + 1, y = r.y + 1, w = Math.max(2, r.w - 2), h = Math.max(2, r.h - 2);
+      const fs = Math.max(9, Math.min(13, Math.sqrt(w * h) / 7.4));
+      const showName = w > 46 && h > 22;
+      const showVal = w > 52 && h > 44;
+      const showSize = w > 76 && h > 64;
+      return `<button class="tile" data-id="${b.id}" data-sel="${F.state.b === b.id ? 1 : 0}"
+        style="left:${(x / W * 100).toFixed(3)}%;top:${(y / H * 100).toFixed(3)}%;width:${(w / W * 100).toFixed(3)}%;height:${(h / H * 100).toFixed(3)}%;background:${col.fill};color:${col.ink};font-size:${fs}px"
+        aria-label="${esc(b.name)}, ${sd.l.toLowerCase()} ${bn(F.val(b, sd.k, p))} billion reais, ${colorDef().l} ${colorDef().delta ? pp(v) + ' percentage points' : pct(v)}">
+        ${showName ? `<span class="tile__n">${esc(shortName(b.name))}</span>` : ''}
+        ${showVal ? `<span class="tile__v">${colorDef().delta ? pp(v) : pct(v)}</span>` : ''}
+        ${showSize ? `<span class="tile__a">${bn(F.val(b, sd.k, p))}</span>` : ''}
+      </button>`;
+    }).join('');
+
+    host.querySelectorAll('.tile').forEach(el => {
+      const b = F.byId(el.dataset.id);
+      el.addEventListener('click', () => F.setBank(b.id));
+      el.addEventListener('dblclick', () => { window.location.href = 'bank-dossier.html?b=' + encodeURIComponent(b.id); });
+      el.addEventListener('mousemove', e => F.tip(tooltipFor(b, p), e.clientX, e.clientY));
+      el.addEventListener('mouseleave', F.untip);
+    });
+  }
+
+  function renderLadder(banks, p){
+    const host = document.getElementById('tm');
+    const sd = sizeDef();
+    const usable = banks.filter(b => F.val(b, sd.k, p) != null && F.val(b, sd.k, p) > 0)
+      .sort((a, b) => F.val(b, sd.k, p) - F.val(a, sd.k, p));
+    if (!usable.length){
+      host.style.height = 'auto';
+      host.innerHTML = '<div class="empty" style="margin:16px">No institution reports this line in this quarter.</div>';
+      return;
+    }
+    const max = Math.max(...usable.map(b => F.val(b, sd.k, p)));
+    host.style.height = 'auto';
+    host.style.minHeight = '0';
+    host.innerHTML = `<div class="ladder ladder--inset">
+      <div class="ladder__head">
+        <span>#</span><span>Institution</span><span title="Bar length = ${sd.l.toLowerCase()}">Area</span>
+        <span>${sd.l}</span><span>${colorDef().l}</span>
+      </div>
+      ${usable.map((b, i) => {
+        const v = metricVal(b, p), col = scale.get(v);
+        return `<button class="lrow" data-id="${b.id}" data-sel="${F.state.b === b.id ? 1 : 0}">
+          <span class="lrow__r">${String(i + 1).padStart(2, '0')}</span>
+          <span class="lrow__n">${esc(b.name)}</span>
+          <span class="lrow__track"><span class="lrow__bar" style="width:${Math.max(1, F.val(b, sd.k, p) / max * 100).toFixed(2)}%;background:${col.fill}"></span></span>
+          <span class="lrow__v">${bn(F.val(b, sd.k, p))}</span>
+          <span class="lrow__s">${colorDef().delta ? pp(v) : pct(v)}</span>
+        </button>`;
+      }).join('')}
+    </div>`;
+    host.querySelectorAll('.lrow').forEach(el => {
+      const b = F.byId(el.dataset.id);
+      el.addEventListener('click', () => F.setBank(b.id));
+      el.addEventListener('mousemove', e => F.tip(tooltipFor(b, p), e.clientX, e.clientY));
+      el.addEventListener('mouseleave', F.untip);
+    });
+  }
+
+  let scale = null;
+  function renderMap(){
+    const p = F.state.p;
+    const banks = F.list();
+    scale = F.colorScale(colorDef(), banks, p);
+    renderControls();
+
+    const def = colorDef();
+    const fmtV = v => def.delta ? pp(v) : pct(v);
+    const lgKey = document.getElementById('lgKey');
+    lgKey.textContent = `${def.l} · p10–p90${def.low ? ' · dark = worse' : ''}`;
+    lgKey.title = def.delta ? 'Colour spans the 10th to 90th percentile of the change this quarter'
+      : 'Colour spans the 10th to 90th percentile of the cohort this quarter';
+    document.getElementById('lgLo').textContent = fmtV(scale.lo);
+    document.getElementById('lgHi').textContent = fmtV(scale.hi);
+    document.getElementById('lgBar').style.background = `linear-gradient(90deg, ${scale.gradient})`;
+
+    const sd = sizeDef();
+    const neg = banks.filter(b => F.val(b, sd.k, p) != null && F.val(b, sd.k, p) <= 0).length;
+    document.getElementById('mapHint').innerHTML = `
+      <span>Click a tile to select · double-click for the dossier</span>
+      <span>← → step the quarter</span>
+      ${neg ? `<span>${neg} institution${neg > 1 ? 's' : ''} with a non-positive ${sd.l.toLowerCase()} excluded from area</span>` : ''}
+      ${def.low ? '<span>Ramp runs pale → dark as the ratio worsens</span>' : ''}`;
+
+    const wrap = document.getElementById('mapHostWrap');
+    wrap.style.height = '';
+    wrap.style.minHeight = '';
+    if (F.state.vm === 'ladder') renderLadder(banks, p);
+    else {
+      const host = document.getElementById('tm');
+      host.style.height = ''; host.style.minHeight = '';
+      renderTreemap(banks, p);
+    }
+  }
+
+  /* ---------- side panel ---------- */
+  function renderSide(){
+    const p = F.state.p, b = F.byId(F.state.b) || F.list()[0];
+    if (!b) { document.getElementById('side').innerHTML = '<div class="empty">No selection.</div>'; return; }
+    const banks = F.list();
+    const peers = banks.filter(x => x.id !== b.id);
+    const med = k => F.median(F.QA.cohort(peers, k, p).map(x => F.val(x, k, p)));
+    const rank = F.rankBy(b, p, 'a', banks);
+    const series = P.map((_, i) => F.val(b, 'roe', i));
+    const pl = F.pnl(b, p);
+    const g = F.gradeOf(b.id);
+    const row = (k, field, v, cls) => `<div class="side__row"><span>${k}</span><span class="${cls || ''}"${field ? ` data-lin="${field}:${b.id}:${P[p]}" tabindex="0" role="button" aria-label="${k} lineage"` : ''}>${v}</span></div>`;
+    document.getElementById('side').innerHTML = `
+      <div>
+        <div class="side__h">Selected</div>
+        <div class="side__bank" style="margin-top:8px">${esc(b.name)}</div>
+        <div class="side__cat">${esc(b.cat)} · ${esc(b.tcb)} · #${rank || '—'} by assets</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:8px">
+          ${F.qaBadge(b.id, { long: true })}
+          <span class="footnote">${esc(g.label)}</span>
+        </div>
+      </div>
+      <div class="side__spark">
+        <div class="side__h" style="margin-bottom:6px">ROE · ${series.filter(v => v != null).length} quarters</div>
+        <span style="color:var(--accent)">${F.spark(series.length ? series : [null], { w: 248, h: 38, fill: 'var(--accent-soft)' })}</span>
+      </div>
+      <div>
+        ${row('Return on equity', 'roe', pct(F.val(b, 'roe', p)))}
+        ${row('Peer median ROE', '', pct(med('roe')))}
+        ${row('Net interest margin', 'nim', pct(F.val(b, 'nim', p)))}
+        ${row('Cost of risk', 'cor', pct(F.val(b, 'cor', p)))}
+        ${row('Efficiency', 'eff', pct(F.val(b, 'eff', p)))}
+        ${row('Share of assets', '', pct(F.share(b, p)))}
+      </div>
+      <div>
+        <div class="side__h" style="margin-bottom:6px">Income · 12M · R$ bn</div>
+        <div class="side__pl">
+          <div class="pl"><span>Net interest income</span><span>${bn(pl.nii)}</span></div>
+          <div class="pl"><span>Provisions</span><span>${pl.prov == null ? '—' : '−' + bn(pl.prov)}</span></div>
+          <div class="pl"><span class="muted">Before other costs</span><span class="muted">${pl.pre == null ? '—' : bn(pl.pre)}</span></div>
+          <div class="pl"><span>Other result</span><span>${pl.other == null ? '—' : (pl.other < 0 ? '−' : '+') + bn(Math.abs(pl.other))}</span></div>
+          <div class="pl pl--sum"><span>Net income</span><span>${bn(pl.ni)}</span></div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <a class="link" href="pnl-lab.html?b=${encodeURIComponent(b.id)}">Open the income lab <span>→</span></a>
+        <a class="link" href="bank-dossier.html?b=${encodeURIComponent(b.id)}">Open the dossier <span>→</span></a>
+      </div>`;
+  }
+
+  /* ---------- movers ---------- */
+  let moverKey = 'roe';
+  function renderMovers(){
+    const p = F.state.p;
+    const wrap = document.getElementById('movers');
+    document.getElementById('segMover').innerHTML = [
+      ['roe', 'ROE'], ['ni', 'Net income'], ['roa', 'ROA']
+    ].map(([k, l]) => `<button data-m="${k}" aria-pressed="${k === moverKey}">${l}</button>`).join('');
+    document.getElementById('segMover').querySelectorAll('button').forEach(b => {
+      b.onclick = () => { moverKey = b.dataset.m; renderMovers(); };
+    });
+    document.getElementById('moversQ').textContent = p > 0 ? `${qLabel(P[p])} vs ${qLabel(P[p - 1])}` : 'need two quarters';
+    if (p === 0){
+      wrap.innerHTML = '<div class="empty" style="grid-column:1/-1">Select a later quarter to see quarter-on-quarter movement.</div>';
+      return;
+    }
+    const delta = (b, i) => moverKey === 'ni'
+      ? F.QA.growth(b, 'ni', i)
+      : F.dlt(b, moverKey, i);
+    const rows = F.list()
+      .filter(b => delta(b, p) != null)
+      .map(b => ({ b, d: delta(b, p) }))
+      .sort((a, z) => z.d - a.d);
+    const fmtMover = v => moverKey === 'ni' ? (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v * 100).toFixed(1) + '%' : pp(v) + ' pp';
+    const fmtLevel = b => moverKey === 'ni' ? bn(F.val(b, 'ni', p)) + ' bn' : moverKey === 'roa' ? pct(F.val(b, 'roa', p)) : pct(F.val(b, 'roe', p));
+    const col = (title, arr) => `
+      <div class="movers__col">
+        <div class="movers__head"><h3>${title}</h3><span class="eyebrow">Δ ${moverKey === 'ni' ? 'income' : moverKey === 'roa' ? 'ROA' : 'ROE'}</span></div>
+        ${arr.map(r => `<button class="mrow" data-id="${r.b.id}">
+          <span class="mrow__n">${esc(r.b.name)}</span>
+          <span class="mrow__v">${fmtLevel(r.b)}</span>
+          <span class="mrow__d ${dirClass(r.d)}">${fmtMover(r.d)}</span>
+        </button>`).join('') || '<div class="empty">No data.</div>'}
+      </div>`;
+    wrap.innerHTML = col('Improving', rows.slice(0, 5)) + col('Deteriorating', rows.slice(-5).reverse());
+    wrap.querySelectorAll('.mrow').forEach(el => {
+      el.onclick = () => F.setBank(el.dataset.id);
+    });
+  }
+
+  function redraw(){ renderKPIs(); renderMap(); renderMovers(); renderSide(); }
+  F.on('period', redraw);
+  F.on('universe', redraw);
+  F.on('basket', redraw);
+  F.on('map', redraw);
+  F.on('bank', () => { renderMap(); renderSide(); });
+
+  const db = document.getElementById('defsBtn2');
+  if (db) db.onclick = () => F.openDefs();
+
+  redraw();
+  let t;
+  const ro = new ResizeObserver(() => {
+    if (F.state.vm !== 'map') return;
+    clearTimeout(t);
+    t = setTimeout(() => { if (F.state.vm === 'map') renderTreemap(F.list(), F.state.p); }, 140);
+  });
+  ro.observe(document.getElementById('tm'));
+})();
+</script>
+</body>
+</html>

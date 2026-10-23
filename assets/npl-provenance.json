@@ -1,0 +1,165 @@
+{
+  "generated": "2026-10-20T23:19:07.083Z",
+  "selection": "report 130 (credit by financial-instrument portfolio), type 1009, 6 quarters",
+  "files": {
+    "dados202503_3.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202503%2Fdados202503_3.json",
+      "bytes": 6492113,
+      "sha256": "5042054b32ba57ceb0d477ae56809d3c92c50517d892bd5959ce29fa67c04d6b",
+      "cached": true,
+      "retrieved": "2026-10-20T23:19:07.083Z"
+    },
+    "dados202506_3.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202506%2Fdados202506_3.json",
+      "bytes": 6511857,
+      "sha256": "a8537bff8e7af0c698a4e76095e13c132496aac8e9343b9f2ea95158dda81ef6",
+      "cached": true,
+      "retrieved": "2026-10-20T23:19:07.083Z"
+    },
+    "dados202509_3.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202509%2Fdados202509_3.json",
+      "bytes": 6546748,
+      "sha256": "4a0a08d472d29b42e5474c51a7fc22d6f62ec01411a6360858cdd794fdcafb90",
+      "cached": true,
+      "retrieved": "2026-10-20T23:19:07.083Z"
+    },
+    "dados202512_3.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202512%2Fdados202512_3.json",
+      "bytes": 5760928,
+      "sha256": "e9fb9597f177df1150c8cc73af8e8f064f23f72420ede2e6933b7d48e7e2321a",
+      "cached": true,
+      "retrieved": "2026-10-20T23:19:07.083Z"
+    },
+    "dados202603_3.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202603%2Fdados202603_3.json",
+      "bytes": 5736590,
+      "sha256": "b5ab946cacf9d9fbb12e855607ca62e21734dd916083a9b23a73e7e0d4118d51",
+      "cached": true,
+      "retrieved": "2026-10-20T23:19:07.083Z"
+    },
+    "dados202606_3.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202606%2Fdados202606_3.json",
+      "bytes": 5724840,
+      "sha256": "4404c6186ac6febb122078dd40dd02e51041100e54c5e0ac4cc5fc7e337a9275",
+      "cached": true,
+      "retrieved": "2026-10-20T23:19:07.083Z"
+    }
+  },
+  "checks": {
+    "identityOk": 196,
+    "identityFail": 0,
+    "points": 195,
+    "missing": 8,
+    "zeroPrints": 1,
+    "jumps": 2,
+    "repeats": 0,
+    "filesMissing": 0,
+    "banksLast": 33,
+    "bookLast": 6864
+  },
+  "coverage": [
+    {
+      "q": "202306",
+      "banks": 0,
+      "book": 0,
+      "npl90": null
+    },
+    {
+      "q": "202309",
+      "banks": 0,
+      "book": 0,
+      "npl90": null
+    },
+    {
+      "q": "202312",
+      "banks": 0,
+      "book": 0,
+      "npl90": null
+    },
+    {
+      "q": "202403",
+      "banks": 0,
+      "book": 0,
+      "npl90": null
+    },
+    {
+      "q": "202406",
+      "banks": 0,
+      "book": 0,
+      "npl90": null
+    },
+    {
+      "q": "202409",
+      "banks": 0,
+      "book": 0,
+      "npl90": null
+    },
+    {
+      "q": "202412",
+      "banks": 0,
+      "book": 0,
+      "npl90": null
+    },
+    {
+      "q": "202503",
+      "banks": 32,
+      "book": 6163,
+      "npl90": 0.030796586777893587
+    },
+    {
+      "q": "202506",
+      "banks": 33,
+      "book": 6259,
+      "npl90": 0.03316593323890715
+    },
+    {
+      "q": "202509",
+      "banks": 33,
+      "book": 6410,
+      "npl90": 0.03585419125696929
+    },
+    {
+      "q": "202512",
+      "banks": 31,
+      "book": 6625,
+      "npl90": 0.036674027618669995
+    },
+    {
+      "q": "202603",
+      "banks": 33,
+      "book": 6767,
+      "npl90": 0.04091956393560426
+    },
+    {
+      "q": "202606",
+      "banks": 33,
+      "book": 6864,
+      "npl90": 0.04161390035520859
+    }
+  ],
+  "jumps": [
+    {
+      "id": "C0086581",
+      "q": "202603",
+      "from": 0.008581022833723759,
+      "to": 0.14164316384298778,
+      "book": 0.7809697358400001
+    },
+    {
+      "id": "C0080288",
+      "q": "202603",
+      "from": 0.030532438893641732,
+      "to": 0.15504089924691425,
+      "book": 54.74682639619
+    }
+  ],
+  "zeros": [
+    {
+      "id": "C0088022",
+      "q": "202512",
+      "book": 27.41256175101,
+      "rule": "npl_zero"
+    }
+  ],
+  "filesMissing": []
+}

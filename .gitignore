@@ -1,0 +1,13 @@
+# Raw BCB IF.Data downloads (91 MB) — needed only to rebuild the feeds
+data/
+
+# OneDrive / Windows junk
+desktop.ini
+Thumbs.db
+*.tmp
+~$*
+
+# scratch probes
+_probe.*
+_bal.py
+_dup.py

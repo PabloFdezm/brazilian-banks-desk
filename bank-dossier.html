@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FARO — Bank dossier</title>
+<meta name="description" content="One Brazilian bank against its cohort: percentile rulers, thirteen quarters of profitability, funding composition and closest peers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .dqa{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+  .dqa strong{ font-weight: 500; color: var(--fg); }
+  .dqa .sep{ width: 1px; height: 12px; background: var(--border); }
+  .keyrow{ display: flex; gap: 22px; flex-wrap: wrap; margin-top: 20px; }
+  .keyrow div{ min-width: 96px; }
+  .keyrow dt{ font-family: var(--font-mono); font-size: 9px; letter-spacing: .11em; text-transform: uppercase; color: var(--muted-dim); }
+  .keyrow dd{ margin: 3px 0 0; font-family: var(--font-mono); font-size: 15px; }
+  .capwrap{ display: grid; grid-template-columns: 300px minmax(0,1fr); gap: 32px; align-items: start; }
+  .capcells{ display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+  .capcells .stat{ padding: 11px 12px 12px; }
+  .capcells .stat__v{ font-size: 20px; }
+  .capchart{ border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); padding: 4px 8px 0; }
+  .capkey{ display: flex; gap: 14px; align-items: center; font-family: var(--font-mono); font-size: 9.5px; color: var(--muted); margin-top: 6px; }
+  .capkey i{ display: inline-block; width: 12px; height: 2px; margin-right: 5px; vertical-align: 3px; }
+  .capcells .stat--wide{ grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background .14s ease; }
+  a.stat--wide:hover{ background: var(--surface-2); }
+  a.stat--wide:hover .stat__l{ color: var(--fg); }
+  .cw__txt{ min-width: 0; }
+  .cw__txt .stat__m{ display: flex; flex-direction: column; gap: 1px; }
+  .cw__txt .stat__m .neg{ color: var(--neg); }
+  .cw__txt .stat__m .pos{ color: var(--fg); }
+  .cw__spark{ display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex: 0 0 auto; color: var(--fg); }
+  .cw__spark svg{ display: block; }
+  .cw__spark span{ font-family: var(--font-mono); font-size: 7.5px; letter-spacing: .05em; color: var(--muted-dim); }
+  @media (max-width: 980px){ .capwrap{ grid-template-columns: minmax(0,1fr); gap: 16px; } }
+  .rr{ display: flex; flex-direction: column; gap: 14px; }
+  .rr__head{ display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .chart-legend{ display: flex; gap: 14px; align-items: center; font-family: var(--font-mono); font-size: 9.5px; color: var(--muted); letter-spacing: .03em; }
+  .chart-legend i{ display: inline-block; width: 14px; height: 2px; background: var(--fg); margin-right: 5px; vertical-align: middle; }
+  .chart-legend i.d{ background: var(--muted-dim); height: 1px; }
+  .readout{ display: flex; gap: 18px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); min-height: 18px; }
+  .readout b{ color: var(--fg); font-weight: 500; }
+  .stackwrap{ display: grid; grid-template-columns: minmax(0,1fr) 220px; gap: 24px; align-items: start; }
+  .bsl{ display: flex; flex-direction: column; gap: 8px; }
+  .bsl__i{ display: flex; gap: 8px; align-items: center; font-size: 11.5px; }
+  .bsl__s{ width: 10px; height: 10px; flex: 0 0 10px; border-radius: 1px; }
+  .bsl__v{ margin-left: auto; font-family: var(--font-mono); font-size: 11px; }
+  .ruler__v .qanull{ font-family: var(--font-mono); font-size: 8.5px; color: var(--muted-dim); letter-spacing: .04em; }
+  .notes{ display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); gap: 24px; }
+  .notes textarea{
+    width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 9px 11px; font: inherit; font-size: 12px; color: var(--fg); resize: vertical; min-height: 88px;
+  }
+  .notes textarea:focus{ outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .notelist{ display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+  .notelist .nl{ background: var(--surface); padding: 8px 11px; }
+  .notelist .nl b{ font-family: var(--font-mono); font-size: 9.5px; font-weight: 500; color: var(--muted); letter-spacing: .05em; display: block; }
+  .notelist .nl p{ font-size: 11.5px; margin-top: 3px; }
+  .notelist .nl button{ font-family: var(--font-mono); font-size: 9px; color: var(--muted-dim); float: right; }
+  .notelist .nl button:hover{ color: var(--neg); }
+  .notelist .empty{ padding: 14px; font-size: 11px; border: 0; }
+  @media (max-width: 980px){
+    .notes{ grid-template-columns: minmax(0,1fr); }
+    .stackwrap{ grid-template-columns: minmax(0,1fr); }
+    .keyrow{ gap: 14px; }
+    .keyrow dd{ font-size: 13px; }
+  }
+</style>
+</head>
+<body data-page="dossier" data-title="Bank dossier" data-kicker="Single institution · IF.Data">
+
+<aside class="rail" id="rail"></aside>
+
+<div class="main">
+  <header class="topbar" id="topbar"></header>
+
+  <main class="content">
+
+    <section class="dossier" data-od-id="dossier-head">
+      <div class="dossier__l">
+        <p class="eyebrow" id="dHead">Conglomerate · —</p>
+        <h1 id="dName">—</h1>
+        <div class="dqa" id="dQa"></div>
+        <dl class="dossier__meta" id="dMeta"></dl>
+        <div class="bsel">
+          <select id="bankSel" aria-label="Choose institution"></select>
+          <button class="btn btn--sm" id="prevBank" aria-label="Previous institution by assets">←</button>
+          <button class="btn btn--sm" id="nextBank" aria-label="Next institution by assets">→</button>
+          <a class="link" id="plLink" href="pnl-lab.html" style="margin-left:8px">Income bridge <span>→</span></a>
+        </div>
+      </div>
+      <div class="dossier__r">
+        <div>
+          <p class="eyebrow">Return on equity · <span id="dQ">—</span></p>
+          <div class="big" style="margin-top:10px" id="dRoe">—</div>
+          <div style="display:flex; gap:12px; align-items:baseline; margin-top:8px">
+            <span class="num" id="dRoeD" style="font-size:12px">—</span>
+            <span class="footnote">vs prior quarter · peer median <span id="dRoeMed">—</span></span>
+          </div>
+        </div>
+        <div class="keyrow" id="dRank"></div>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="dossier-capital">
+      <div class="sec__head">
+        <p class="eyebrow">01 · Capital</p>
+        <h2>Capital against the risk it carries</h2>
+        <div class="spacer"></div>
+        <a class="link" id="capLink" href="capital-lab.html">Capital lab <span>→</span></a>
+      </div>
+      <div class="capwrap">
+        <div>
+          <div class="capcells" id="dCapStats"></div>
+          <div class="capkey"><span><i style="background:var(--fg)"></i>Basel</span><span><i style="background:var(--accent)"></i>CET1</span><span style="color:var(--neg)">– – 10.5% floor</span></div>
+        </div>
+        <div class="chart capchart" id="capChart"></div>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="dossier-standing">
+      <div class="sec__head">
+        <p class="eyebrow">02 · Standing</p>
+        <h2>Where it sits in the cohort</h2>
+        <div class="spacer"></div>
+        <span class="footnote" id="cohNote"></span>
+      </div>
+      <div class="rulers" id="rulers"></div>
+      <p class="footnote" style="margin-top:10px">Dot is this bank · vertical tick is the cohort median · ends of the track are the cohort minimum and maximum. Cost of risk and efficiency are better when low.</p>
+    </section>
+
+    <section class="sec" data-od-id="dossier-trend">
+      <div class="sec__head">
+        <p class="eyebrow">03 · Trend</p>
+        <h2>Thirteen quarters, one selected</h2>
+        <div class="spacer"></div>
+        <div class="tabbar" id="metricTabs" role="tablist" aria-label="Metric"></div>
+      </div>
+      <div class="rr">
+        <div class="rr__head">
+          <div class="chart-legend"><span><i></i><span id="lgBank">Bank</span></span><span><i class="d"></i>Cohort median</span></div>
+          <div class="readout" id="readout"></div>
+        </div>
+        <div class="chart" id="chart"></div>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="dossier-balance">
+      <div class="sec__head">
+        <p class="eyebrow">04 · Balance sheet</p>
+        <h2>What the assets are funded with</h2>
+        <div class="spacer"></div>
+        <span class="footnote">share of total assets · 13 quarters</span>
+      </div>
+      <div class="stackwrap">
+        <div>
+          <div class="stackbars" id="stack"></div>
+          <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:9.5px; color:var(--muted-dim); margin-top:6px" id="stackAxis"></div>
+        </div>
+        <div class="bsl" id="stackLegend"></div>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="dossier-peers">
+      <div class="sec__head">
+        <p class="eyebrow">05 · Neighbours</p>
+        <h2>The six closest balance sheets</h2>
+        <div class="spacer"></div>
+        <a class="link" href="peer-matrix.html">Full screen <span>→</span></a>
+      </div>
+      <div class="tbl-scroll">
+        <table class="dt" id="peerTbl">
+          <thead><tr>
+            <th class="l">Institution</th><th>Assets</th><th>ROE</th><th>Cost of risk</th><th>Efficiency</th><th>Coverage</th><th>Δ ROE</th><th>ROE · 13Q</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="dossier-notes">
+      <div class="sec__head">
+        <p class="eyebrow">06 · Notes</p>
+        <h2>What you thought when you looked</h2>
+        <div class="spacer"></div>
+        <span class="footnote">Stored on this machine, per bank and quarter. Exported with the data.</span>
+      </div>
+      <div class="notes">
+        <div>
+          <label class="eyebrow" for="noteBox" style="display:block; margin-bottom:6px" id="noteLab">Note for this quarter</label>
+          <textarea id="noteBox" rows="4" placeholder="e.g. margin reset looks like a denominator change, not pricing — check the funding note"></textarea>
+          <div style="display:flex; gap:8px; margin-top:8px; align-items:center">
+            <button class="btn btn--sm btn--primary" id="noteSave">Save note</button>
+            <button class="btn btn--sm" id="noteClear">Delete</button>
+            <span class="footnote" id="noteState" role="status"></span>
+          </div>
+        </div>
+        <div>
+          <div class="eyebrow" style="margin-bottom:6px">Saved on this bank</div>
+          <div class="notelist" id="noteList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="dossier-method">
+      <details class="method">
+        <summary>How this dossier is calculated</summary>
+        <div class="mbody">
+          <dl class="mgrid">
+            <div><dt>ROE</dt><dd>Net income ÷ average equity, as reported. Quarterly, not annualised.</dd></div>
+            <div><dt>Cohort</dt><dd>The universe selected in the top bar. Changing it changes every median and rank on this page.</dd></div>
+            <div><dt>Funding</dt><dd>Equity and deposits are reported lines; “other liabilities” is the residual of total assets less equity and deposits. A large residual means wholesale funding, repos or insurance float.</dd></div>
+            <div><dt>Coverage</dt><dd>Provisions ÷ credit portfolio. Read as a stock ratio, not a flow.</dd></div>
+          </dl>
+          <p class="footnote">Missing quarters are left as gaps, never interpolated. IF.Data revises prior quarters without a restatement flag, so treat early points as vintage data.</p>
+        </div>
+      </details>
+    </section>
+
+  </main>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/breaks.js"></script>
+<script src="assets/validate.js"></script>
+<script src="assets/capital.js"></script>
+<script src="assets/npl.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  const F = window.Faro, P = F.P, B = F.B;
+  const { pct, pctNum, bn, pp, dirClass, qLabel, esc } = F.fmt;
+
+  const params = new URLSearchParams(location.search);
+  const qb = params.get('b');
+  if (qb && F.byId(qb)) { F.state.b = qb; F.save(); }
+  let bankId = F.byId(F.state.b) ? F.state.b : B[0].id;
+
+  const byAssets = () => B.filter(b => b.a[F.LAST] != null).sort((a, b) => b.a[F.LAST] - a.a[F.LAST]);
+  const bank = () => F.byId(bankId);
+
+  function cohort(){ return F.list(); }
+  function peersOf(b){ return cohort().filter(x => x.id !== b.id); }
+
+  /* ---------- header ---------- */
+  function renderHead(){
+    const b = bank(), p = F.state.p, cs = cohort();
+    document.getElementById('dName').textContent = b.name;
+    document.getElementById('dHead').textContent = `Prudential conglomerate · BCB ${b.id.slice(1).padStart(7, '0')}`;
+    document.getElementById('dQ').textContent = qLabel(P[p]);
+    const roe = F.val(b, 'roe', p);
+    const dRoe = document.getElementById('dRoe');
+    dRoe.innerHTML = (roe == null ? '—' : pctNum(roe)) + '<small>%</small>';
+    dRoe.dataset.lin = 'roe:' + b.id + ':' + P[p];
+    dRoe.setAttribute('tabindex', '0');
+    dRoe.setAttribute('role', 'button');
+    dRoe.setAttribute('aria-label', 'ROE lineage');
+
+    const d = F.dlt(b, 'roe', p);
+    const el = document.getElementById('dRoeD');
+    el.textContent = d == null ? (F.QA.crosses('nim', b.id, p) ? 'held · margin break' : 'no comparable quarter') : `${pp(d)} pp`;
+    el.className = 'num ' + dirClass(d);
+    const peerRoe = F.QA.cohort(peersOf(b), 'roe', p).map(x => F.val(x, 'roe', p));
+    document.getElementById('dRoeMed').textContent = pct(F.median(peerRoe));
+
+    /* quality strip — the same findings the register carries, beside the numbers */
+    const g = F.gradeOf(b.id);
+    const segs = F.QA.segment('cr', b.id).length - 1;
+    document.getElementById('dQa').innerHTML = `
+      ${F.qaBadge(b.id, { long: true })}
+      <span>${esc(g.label)}</span>
+      <span class="sep"></span>
+      <span><strong>${g.errors}</strong> restated · <strong>${g.gaps}</strong> gap${g.gaps === 1 ? '' : 's'} · <strong>${g.notes}</strong> note${g.notes === 1 ? '' : 's'}</span>
+      ${segs ? `<span class="sep"></span><span>credit series split at ${F.QA.segment('cr', b.id).slice(1).map(i => F.fmt.qLabel(P[i])).join(', ')}</span>` : ''}
+      <a class="link" href="data-integrity.html?b=${encodeURIComponent(b.id)}" style="margin-left:auto">Findings <span>→</span></a>`;
+
+    const meta = [
+      ['Type', b.cat],
+      ['TCB class', b.tcb],
+      ['Assets', bn(F.val(b, 'a', p)) + ' bn'],
+      ['Credit', bn(F.val(b, 'cr', p)) + ' bn'],
+      ['Deposits', bn(F.val(b, 'dep', p)) + ' bn'],
+      ['Share', pct(F.share(b, p))]
+    ];
+    document.getElementById('dMeta').innerHTML = meta.map(([k, v], i) => {
+      const field = ['', '', 'a', 'cr', 'dep', ''][i];
+      return `<div><dt>${k}</dt><dd${field ? ` data-lin="${field}:${b.id}:${P[p]}" tabindex="0" role="button" aria-label="${k} lineage"` : ''}>${esc(v)}</dd></div>`;
+    }).join('');
+
+    const rA = F.rankBy(b, p, 'a', cs), rR = F.rankBy(b, p, 'roe', cs), rC = F.rankBy(b, p, 'cor', cs);
+    document.getElementById('dRank').innerHTML = `
+      <div><dt>Rank · assets</dt><dd>#${rA || '—'} <span class="muted" style="font-size:11px">of ${cs.length}</span></dd></div>
+      <div><dt>Rank · ROE</dt><dd>#${rR || '—'}</dd></div>
+      <div><dt>Rank · cost of risk</dt><dd>#${rC || '—'}</dd></div>`;
+
+    const sel = document.getElementById('bankSel');
+    const groups = {};
+    B.forEach(x => { (groups[x.cat] = groups[x.cat] || []).push(x); });
+    sel.innerHTML = Object.keys(groups).map(g => `<optgroup label="${esc(g)}">${groups[g]
+      .sort((a, c) => (c.a[F.LAST] || 0) - (a.a[F.LAST] || 0))
+      .map(x => `<option value="${x.id}" ${x.id === b.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('');
+    sel.value = b.id;
+    const plLink = document.getElementById('plLink');
+    if (plLink) plLink.href = 'pnl-lab.html?b=' + encodeURIComponent(b.id);
+  }
+
+  function setUrl(id){
+    try { history.replaceState(null, '', '?b=' + encodeURIComponent(id)); } catch (e) { /* file:// or sandboxed preview */ }
+  }
+
+  function go(id){
+    if (!F.byId(id)) return;
+    bankId = id; F.setBank(id);
+    setUrl(id);
+    renderAll();
+  }
+
+  document.getElementById('bankSel').onchange = e => go(e.target.value);
+  document.getElementById('prevBank').onclick = () => {
+    const order = byAssets(), i = order.findIndex(x => x.id === bankId);
+    go(order[Math.max(0, i - 1)].id);
+  };
+  document.getElementById('nextBank').onclick = () => {
+    const order = byAssets(), i = order.findIndex(x => x.id === bankId);
+    go(order[Math.min(order.length - 1, i + 1)].id);
+  };
+
+  /* ---------- rulers ---------- */
+  const RULERS = [
+    { k: 'roe', l: 'Return on equity', f: pct, low: false },
+    { k: 'roa', l: 'Return on assets', f: pct, low: false },
+    { k: 'nim', l: 'Net interest margin', f: pct, low: false },
+    { k: 'cor', l: 'Cost of risk', f: pct, low: true },
+    { k: 'eff', l: 'Efficiency ratio', f: pct, low: true },
+    { k: 'cov', l: 'Coverage ratio', f: pct, low: false }
+  ];
+  function renderRulers(){
+    const b = bank(), p = F.state.p, ps = peersOf(b);
+    document.getElementById('cohNote').textContent = `${ps.length} institutions in cohort`;
+    document.getElementById('rulers').innerHTML = RULERS.map(r => {
+      const vals = F.QA.cohort(ps, r.k, p).map(x => F.val(x, r.k, p));
+      const mm = F.minmax(vals), med = F.median(vals), v = F.val(b, r.k, p);
+      const pos = v == null || mm.min == null || mm.max === mm.min ? 50 : Math.max(0, Math.min(100, (v - mm.min) / (mm.max - mm.min) * 100));
+      const medPos = med == null || mm.min == null || mm.max === mm.min ? 50 : (med - mm.min) / (mm.max - mm.min) * 100;
+      const rank = v == null ? null : (r.low
+        ? vals.filter(x => x < v).length + 1
+        : vals.filter(x => x > v).length + 1);
+      return `<div class="ruler">
+        <div class="ruler__n">${r.l}<span class="muted" style="font-size:10px; margin-left:6px">${r.low ? 'lower better' : ''}</span></div>
+        <div class="ruler__v">${r.f(v)}${v == null ? '<span class="qanull"> · restated</span>' : ''}</div>
+        <div class="ruler__track">
+          <div class="ruler__axis"></div>
+          <div class="ruler__tick" style="left:${medPos.toFixed(1)}%"></div>
+          <div class="ruler__dot" style="left:${pos.toFixed(1)}%"></div>
+          <div class="ruler__ends"><span>${r.f(mm.min)}</span><span>${r.f(mm.max)}</span></div>
+        </div>
+        <div class="ruler__p">${rank ? '#' + rank : '—'}</div>
+      </div>`;
+    }).join('');
+  }
+
+  /* ---------- trend chart ---------- */
+  const METRICS = [
+    { k: 'roe', l: 'ROE', fmt: pct },
+    { k: 'nim', l: 'NIM', fmt: pct },
+    { k: 'cor', l: 'Cost of risk', fmt: pct },
+    { k: 'eff', l: 'Efficiency', fmt: pct },
+    { k: 'ni', l: 'Net income', fmt: v => bn(v) }
+  ];
+  let metric = 'roe';
+
+  document.getElementById('metricTabs').innerHTML = METRICS.map(m =>
+    `<button class="tab" role="tab" data-m="${m.k}" aria-selected="${m.k === metric}">${m.l}</button>`).join('');
+  document.querySelectorAll('#metricTabs .tab').forEach(t => {
+    t.onclick = () => { metric = t.dataset.m; drawChart(); };
+  });
+
+  function medianSeries(k){
+    const ps = peersOf(bank());
+    return P.map((_, i) => F.median(F.QA.cohort(ps, k, i).map(x => F.val(x, k, i))));
+  }
+
+  function drawChart(){
+    const b = bank(), p = F.state.p;
+    const host = document.getElementById('chart');
+    const m = METRICS.find(x => x.k === metric);
+    document.querySelectorAll('#metricTabs .tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.m === metric)));
+    document.getElementById('lgBank').textContent = b.name;
+
+    const W = Math.max(320, host.clientWidth), H = 264;
+    const pad = { l: 46, r: 14, t: 16, b: 26 };
+    const bankVals = P.map((_, i) => F.val(b, metric, i));
+    const medVals = medianSeries(metric);
+    const breaks = F.QA.segment(metric, b.id).slice(1);
+    const all = bankVals.concat(medVals).filter(v => v != null);
+    if (!all.length){ host.innerHTML = '<div class="empty">No series for this metric.</div>'; return; }
+    let lo = Math.min(...all), hi = Math.max(...all);
+    if (lo === hi){ lo -= 0.01; hi += 0.01; }
+    const padY = (hi - lo) * 0.16; lo -= padY; hi += padY;
+
+    const X = i => pad.l + (W - pad.l - pad.r) * (i / (P.length - 1));
+    const Y = v => pad.t + (H - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
+
+    const path = arr => {
+      let d = '', pen = false;
+      arr.forEach((v, i) => {
+        if (v == null){ pen = false; return; }
+        d += (pen ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1) + ' ';
+        pen = true;
+      });
+      return d;
+    };
+
+    // y ticks
+    let ticks = [];
+    for (let i = 0; i <= 3; i++) ticks.push(lo + (hi - lo) * i / 3);
+
+    const xLab = P.map((q, i) => {
+      if (W < 720 && i % 2) return '';
+      return `<text x="${X(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${F.fmt.qShort(q)}</text>`;
+    }).join('');
+
+    const svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${esc(m.l)} for ${esc(b.name)} against cohort median">
+      ${ticks.map(t => `<line class="gridline" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>
+        <text x="${pad.l - 8}" y="${(Y(t) + 3).toFixed(1)}" text-anchor="end">${m.fmt(t, 0)}</text>`).join('')}
+      ${breaks.map(i => `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${pad.t}" y2="${H - pad.b}" stroke="var(--warn)" stroke-width="1" stroke-dasharray="1 3"/>
+        <text x="${(X(i) + 4).toFixed(1)}" y="${pad.t + 8}" fill="var(--warn)">break</text>`).join('')}
+      <line x1="${X(p).toFixed(1)}" x2="${X(p).toFixed(1)}" y1="${pad.t}" y2="${H - pad.b}" stroke="var(--border-strong)" stroke-width="1" stroke-dasharray="2 3"/>
+      <path class="series series--dash" d="${path(medVals)}" stroke="var(--muted-dim)"/>
+      <path class="series" d="${path(bankVals)}" stroke="var(--fg)"/>
+      ${bankVals.map((v, i) => v == null ? '' : `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${i === p ? 3.4 : 1.6}" fill="${i === p ? 'var(--accent)' : 'var(--fg)'}"/>`).join('')}
+      <g class="axis">${xLab}</g>
+      ${breaks.length ? `<text x="${W - pad.r}" y="${pad.t + 8}" text-anchor="end" class="axis" fill="var(--warn)">series break — no change crosses it</text>` : ''}
+      <rect id="hit" x="${pad.l}" y="${pad.t}" width="${W - pad.l - pad.r}" height="${H - pad.t - pad.b}" fill="transparent"/>
+    </svg>`;
+    host.innerHTML = svg;
+
+    const readout = document.getElementById('readout');
+    const setReadout = i => {
+      const v = bankVals[i], mv = medVals[i];
+      readout.innerHTML = `<span>${qLabel(P[i])}</span><span>${m.l} <b>${m.fmt(v)}</b></span><span>cohort <b>${m.fmt(mv)}</b></span>`;
+    };
+    setReadout(p);
+    const hit = host.querySelector('#hit');
+    hit.addEventListener('mousemove', e => {
+      const r = host.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width * W;
+      const i = Math.max(0, Math.min(P.length - 1, Math.round((x - pad.l) / (W - pad.l - pad.r) * (P.length - 1))));
+      setReadout(i);
+      F.tip(`<div class="tt">${b.name}</div><div class="ts">${qLabel(P[i])}</div>
+        <div class="tr"><span>${m.l}</span><span>${m.fmt(bankVals[i])}</span></div>
+        <div class="tr"><span>Cohort median</span><span>${m.fmt(medVals[i])}</span></div>`, e.clientX, e.clientY);
+    });
+    hit.addEventListener('mouseleave', () => { F.untip(); setReadout(p); });
+    hit.addEventListener('click', e => {
+      const r = host.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width * W;
+      const i = Math.max(0, Math.min(P.length - 1, Math.round((x - pad.l) / (W - pad.l - pad.r) * (P.length - 1))));
+      F.setPeriod(i);
+    });
+  }
+
+  /* ---------- funding stack ---------- */
+  function renderStack(){
+    const b = bank();
+    const cols = P.map((q, i) => {
+      const a = F.val(b, 'a', i);
+      if (a == null) return null;
+      const eq = Math.max(0, (F.val(b, 'eq', i) || 0) / a);
+      const dep = Math.max(0, (F.val(b, 'dep', i) || 0) / a);
+      const other = Math.max(0, 1 - eq - dep);
+      return { q, eq, dep, other, a };
+    });
+    const host = document.getElementById('stack');
+    host.innerHTML = cols.map((c, i) => {
+      if (!c) return `<div class="sb" title="no data"></div>`;
+      const mp = F.state.p === i ? 'outline:1px solid var(--fg); outline-offset:1px;' : '';
+      return `<div class="sb" data-i="${i}" style="${mp}" tabindex="0" aria-label="${qLabel(c.q)}: equity ${pct(c.eq)}, deposits ${pct(c.dep)}">
+        <span style="height:${(c.other * 100).toFixed(1)}%;background:var(--border-strong)"></span>
+        <span style="height:${(c.dep * 100).toFixed(1)}%;background:var(--muted)"></span>
+        <span style="height:${(c.eq * 100).toFixed(1)}%;background:var(--fg)"></span>
+      </div>`;
+    }).join('');
+    host.querySelectorAll('.sb[data-i]').forEach(el => {
+      const i = Number(el.dataset.i), c = cols[i];
+      const show = e => F.tip(`<div class="tt">${qLabel(c.q)}</div><div class="ts">${b.name}</div>
+        <div class="tr"><span>Equity</span><span>${pct(c.eq)}</span></div>
+        <div class="tr"><span>Deposits</span><span>${pct(c.dep)}</span></div>
+        <div class="tr"><span>Other liabilities</span><span>${pct(c.other)}</span></div>
+        <div class="tr"><span>Total assets</span><span>${bn(c.a)} bn</span></div>`, e.clientX, e.clientY);
+      el.addEventListener('mousemove', show);
+      el.addEventListener('mouseleave', F.untip);
+      el.addEventListener('click', () => F.setPeriod(i));
+    });
+
+    document.getElementById('stackAxis').innerHTML = `<span>${qLabel(P[0])}</span><span>${qLabel(P[P.length - 1])}</span>`;
+
+    const p = F.state.p, a = F.val(b, 'a', p) || 0;
+    const eqv = F.val(b, 'eq', p) || 0, depv = F.val(b, 'dep', p) || 0;
+    const parts = [
+      { l: 'Equity', v: a ? eqv / a : null, c: 'var(--fg)' },
+      { l: 'Deposits', v: a ? depv / a : null, c: 'var(--muted)' },
+      { l: 'Other liabilities', v: a ? Math.max(0, 1 - (eqv + depv) / a) : null, c: 'var(--border-strong)' }
+    ];
+    document.getElementById('stackLegend').innerHTML = parts.map(x =>
+      `<div class="bsl__i"><span class="bsl__s" style="background:${x.c}"></span>${x.l}<span class="bsl__v">${pct(x.v)}</span></div>`
+    ).join('') + `<div class="footnote" style="margin-top:6px">Credit is ${pct(a ? (F.val(b, 'cr', p) || 0) / a : null)} of assets · ${bn(F.val(b, 'cr', p))} bn</div>`;
+  }
+
+  /* ---------- peers ---------- */
+  function renderPeers(){
+    const b = bank(), p = F.state.p;
+    const ps = cohort().filter(x => x.id !== b.id && x.a[p] != null);
+    const near = ps.slice().sort((x, y) => Math.abs(x.a[p] - b.a[p]) - Math.abs(y.a[p] - b.a[p])).slice(0, 6);
+    const rows = [b].concat(near);
+    document.querySelector('#peerTbl tbody').innerHTML = rows.map(x => {
+      const d = F.dlt(x, 'roe', p);
+      return `<tr data-id="${x.id}" ${x.id === b.id ? 'data-sel="1"' : ''}>
+        <td class="l name">${esc(x.name)}<span class="type" style="margin-left:8px">${esc(x.cat)}</span></td>
+        <td>${bn(F.val(x, 'a', p))}</td>
+        <td>${pct(F.val(x, 'roe', p))}</td>
+        <td>${pct(F.val(x, 'cor', p))}</td>
+        <td>${pct(F.val(x, 'eff', p))}</td>
+        <td>${pct(F.val(x, 'cov', p))}</td>
+        <td class="${dirClass(d)}">${pp(d)}</td>
+        <td style="padding:4px 10px">${F.spark(x.roe.slice(0, p + 1), { w: 74, h: 18 })}</td>
+      </tr>`;
+    }).join('');
+    document.querySelectorAll('#peerTbl tbody tr').forEach(tr => {
+      tr.onclick = () => go(tr.dataset.id);
+    });
+  }
+
+  /* ---------- notes ---------- */
+  function renderNotes(){
+    const b = bank(), p = F.state.p;
+    const box = document.getElementById('noteBox');
+    document.getElementById('noteLab').textContent = 'Note for ' + qLabel(P[p]);
+    if (document.activeElement !== box) box.value = F.noteGet(b.id, p);
+    const all = F.notesOf(b.id);
+    document.getElementById('noteList').innerHTML = all.length ? all.map(n => `
+      <div class="nl"><button data-del="${n.q}" title="Delete note">✕</button>
+        <b>${qLabel(n.q)}</b><p>${esc(n.text)}</p></div>`).join('')
+      : '<div class="empty">No notes yet on this bank.</div>';
+    document.querySelectorAll('#noteList [data-del]').forEach(el => {
+      el.onclick = () => {
+        const i = P.indexOf(el.dataset.del);
+        F.noteSet(b.id, i, '');
+        renderNotes();
+      };
+    });
+  }
+  document.getElementById('noteSave').onclick = () => {
+    const b = bank(), p = F.state.p;
+    const v = document.getElementById('noteBox').value;
+    F.noteSet(b.id, p, v);
+    document.getElementById('noteState').textContent = v.trim() ? 'saved for ' + qLabel(P[p]) : 'cleared';
+    renderNotes();
+  };
+  document.getElementById('noteClear').onclick = () => {
+    F.noteSet(bank().id, F.state.p, '');
+    document.getElementById('noteBox').value = '';
+    document.getElementById('noteState').textContent = 'deleted';
+    renderNotes();
+  };
+
+  /* ---------- capital ---------- */
+  /* cover of the defaulted book — same construct as Credit & risk:
+     implied provisions (reported coverage ratio × credit book) ÷ the SCR defaulted stock */
+  const multTxt = v => v == null ? '—' : (v >= 10 ? v.toFixed(1) : v.toFixed(2)) + '×';
+  const provOf = (bk, i) => {
+    const cov = F.val(bk, 'cov', i), cr = F.val(bk, 'cr', i);
+    return cov != null && cr != null ? cov * cr : null;
+  };
+  const coverOf = (bk, i) => {
+    const pv = provOf(bk, i), d = F.nplVal(bk.id, 'defd', i);
+    return pv != null && d != null && d > 0 ? pv / d : null;
+  };
+
+  function coverSpark(bk){
+    const series = P.map((q, k) => coverOf(bk, k));
+    const start = series.findIndex(v => v != null);
+    if (start < 0) return '';
+    const vals = series.filter(v => v != null);
+    let lo = Math.min(1, ...vals), hi = Math.max(1, ...vals);
+    const padv = (hi - lo) * 0.18 || 0.12;
+    lo = Math.max(0, lo - padv); hi += padv;
+    const W = 84, H = 30, pad = 3;
+    const span = Math.max(1, P.length - 1 - start);
+    const X = k => pad + (W - pad * 2) * ((k - start) / span);
+    const Y = v => pad + (H - pad * 2) * (1 - (v - lo) / (hi - lo));
+    let d = '', pen = false;
+    series.forEach((v, k) => {
+      if (v == null){ pen = false; return; }
+      d += (pen ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(v).toFixed(1) + ' ';
+      pen = true;
+    });
+    const lastK = series.reduce((acc, v, k) => v != null ? k : acc, start);
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Cover of the defaulted book from ${qLabel(P[start])} to ${qLabel(P[lastK])}">
+      <line x1="${pad}" x2="${W - pad}" y1="${Y(1).toFixed(1)}" y2="${Y(1).toFixed(1)}" stroke="var(--muted-dim)" stroke-dasharray="2 3" stroke-width=".9"/>
+      <path d="${d}" fill="none" stroke="var(--fg)" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+      ${series.map((v, k) => v == null ? '' : `<circle cx="${X(k).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${k === lastK ? 2.2 : 1.2}" fill="${k === lastK ? 'var(--fg)' : 'var(--surface)'}" stroke="var(--fg)" stroke-width=".9"/>`).join('')}
+      ${Y(1) > 9 ? `<text x="${W - pad}" y="${(Y(1) - 3).toFixed(1)}" text-anchor="end" style="font-family:var(--font-mono); font-size:7px; fill:var(--muted-dim)">1.0×</text>` : ''}
+    </svg>`;
+  }
+
+  function coverCell(bk, p, nplStart){
+    const href = 'credit-risk.html?b=' + encodeURIComponent(bk.id);
+    const cover = coverOf(bk, p);
+    const since = nplStart >= 0 && P[nplStart] ? qLabel(P[nplStart]) : '';
+    if (cover == null){
+      const why = p < nplStart ? (since ? `from ${since}` : 'no defaulted print') : 'no defaulted print';
+      return `<a class="stat stat--wide" href="${href}" data-od-id="dossier-cover">
+        <div class="cw__txt"><div class="stat__l">Cover of NPL90</div><div class="stat__v">—</div>
+        <div class="stat__m">${why}</div></div></a>`;
+    }
+    const cohortCovers = cohort().map(x => coverOf(x, p)).filter(v => v != null);
+    const med = F.median(cohortCovers);
+    const rank = 1 + cohortCovers.filter(v => v > cover).length;
+    const prov = provOf(bk, p), defd = F.nplVal(bk.id, 'defd', p);
+    const gapBn = prov - defd;
+    const gapTxt = `R$ ${bn(Math.abs(gapBn))} bn ${gapBn >= 0 ? 'surplus' : 'shortfall'}`;
+    const medTxt = med == null ? 'no cohort print' : `med ${multTxt(med)} · ${rank}/${cohortCovers.length}`;
+    return `<a class="stat stat--wide" href="${href}" data-od-id="dossier-cover" title="Implied provisions against the SCR defaulted stock — provisioning intensity across two filings">
+      <div class="cw__txt">
+        <div class="stat__l">Cover of NPL90</div>
+        <div class="stat__v">${multTxt(cover)}</div>
+        <div class="stat__m"><span class="${gapBn < 0 ? 'neg' : 'pos'}">${gapTxt}</span><span>${medTxt}</span></div>
+      </div>
+      <div class="cw__spark">${coverSpark(bk)}<span>since ${since}</span></div>
+    </a>`;
+  }
+  function renderCapital(){
+    const host = document.getElementById('dCapStats');
+    if (!host) return;
+    if (!F.CAP){
+      host.innerHTML = '<div class="stat"><div class="stat__l">Capital</div><div class="stat__v">—</div></div>';
+      return;
+    }
+    const b = bank(), p = F.state.p;
+    const basel = F.capVal(b.id, 'basel', p), cet1 = F.capVal(b.id, 'cet1', p),
+      rwa = F.capVal(b.id, 'rwa', p), raroc = F.capVal(b.id, 'raroc', p);
+    const nplStart = F.NPL ? P.indexOf(F.NPL.meta.firstPeriod) : Number.MAX_SAFE_INTEGER;
+    const prev = p > 0 ? F.capVal(b.id, 'basel', p - 1) : null;
+    const db = basel != null && prev != null ? basel - prev : null;
+    const cells = [
+      ['Basel ratio', basel == null ? '—' : pct(basel, 2), db == null ? 'no prior print' : (db >= 0 ? '+' : '−') + Math.abs(db * 100).toFixed(2) + ' pp QoQ'],
+      ['CET1', cet1 == null ? '—' : pct(cet1, 2), cet1 != null && basel ? pct(cet1 / basel, 0) + ' of capital' : '—'],
+      ['RWA', rwa == null ? '—' : bn(rwa) + ' bn', F.capVal(b.id, 'density', p) == null ? '—' : pct(F.capVal(b.id, 'density', p), 0) + ' of assets'],
+      ['RAROC', raroc == null ? '—' : pct(raroc, 1), '12M net income ÷ avg PR']
+    ];
+    host.innerHTML = cells.map(([l, v, m]) => `<div class="stat">
+      <div class="stat__l">${l}</div><div class="stat__v">${v}</div><div class="stat__m">${m}</div></div>`).join('') + coverCell(b, p, nplStart);
+    const link = document.getElementById('capLink');
+    if (link) link.href = 'capital-lab.html?b=' + encodeURIComponent(b.id);
+    drawCapChart();
+  }
+
+  function drawCapChart(){
+    const host = document.getElementById('capChart');
+    if (!host) return;
+    if (!F.CAP){ host.innerHTML = '<div class="empty" style="padding:24px">No capital data loaded.</div>'; return; }
+    const b = bank();
+    const W = Math.max(280, host.clientWidth || 480), H = 124;
+    const pad = { l: 34, r: 10, t: 10, b: 16 };
+    const basel = P.map((q, i) => F.capVal(b.id, 'basel', i));
+    const cet1 = P.map((q, i) => F.capVal(b.id, 'cet1', i));
+    const all = basel.concat(cet1).filter(v => v != null);
+    if (!all.length){ host.innerHTML = '<div class="empty" style="padding:24px">This institution has no capital print in the window.</div>'; return; }
+    let lo = Math.min(...all), hi = Math.max(...all);
+    lo = Math.max(0, lo - 0.015); hi += 0.015;
+    if (hi - lo < 0.02){ lo -= 0.01; hi += 0.01; }
+    const X = i => pad.l + (W - pad.l - pad.r) * (i / (P.length - 1));
+    const Y = v => pad.t + (H - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
+    const line = arr => arr.map((v, i) => v == null ? null : `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean).join(' ');
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Basel and CET1 ratio, 13 quarters">
+      ${[0, 1].map(t => { const v = lo + (hi - lo) * t; return `<line class="gridline" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text x="${pad.l - 6}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end">${pct(v, 0)}</text>`; }).join('')}
+      ${F.CAP.meta.floor > lo && F.CAP.meta.floor < hi ? `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(F.CAP.meta.floor)}" y2="${Y(F.CAP.meta.floor)}" stroke="var(--neg)" stroke-dasharray="2 3"/>` : ''}
+      <path d="${line(basel)}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>
+      <path d="${line(cet1)}" fill="none" stroke="var(--accent)" stroke-width="1.3"/>
+      ${basel.map((v, i) => v == null ? '' : `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${i === F.state.p ? 2.6 : 1.3}" fill="${i === F.state.p ? 'var(--fg)' : 'var(--surface)'}" stroke="var(--fg)" stroke-width="1"/>`).join('')}
+      ${[0, 4, 8, 12].map(i => `<text x="${X(i).toFixed(1)}" y="${H - 3}" text-anchor="middle">${P[i] ? "'" + P[i].slice(2, 4) : ''}</text>`).join('')}
+    </svg>`;
+  }
+
+  function renderAll(){
+    renderHead(); renderCapital(); renderRulers(); drawChart(); renderStack(); renderPeers(); renderNotes();
+  }
+  F.on('basket', renderAll);
+  F.on('period', () => { if (bankId !== F.state.b) bankId = F.state.b; renderAll(); });
+  F.on('universe', renderAll);
+  F.on('bank', () => { if (F.state.b !== bankId){ bankId = F.state.b; setUrl(bankId); } renderAll(); });
+
+  renderAll();
+  let t;
+  window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { drawChart(); drawCapChart(); }, 150); });
+})();
+</script>
+</body>
+</html>
