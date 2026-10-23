@@ -54,6 +54,30 @@ node tools/build-breaks.js      # assets/breaks.json -> assets/breaks.js
 Each writes a provenance file recording URL, sha256 and coverage per download, so any figure
 on the desk can be traced back to the file it came from.
 
+## Deploy
+
+The desk is static: Cloudflare Pages serves `dist/`, and nothing runs at request time except
+the access gate. The publishable artifact is assembled by a script so the raw downloads can
+never ship by accident — `tools/build-site.js` copies the 9 pages and `assets/`, and exits
+non-zero if `dist/data/` ever appears.
+
+```
+node tools/build-site.js
+npx wrangler pages deploy dist --project-name brazilian-banks-desk --branch main
+```
+
+Live at `https://brazilian-banks-desk.pages.dev`, behind HTTP Basic Auth. `edge/_worker.js`
+ships as `dist/_worker.js` and answers 401 to any request without credentials; it fails
+**closed** if the secrets are missing. Credentials are Pages secrets, never in the repo:
+
+```
+npx wrangler pages secret put SITE_USER --project-name brazilian-banks-desk
+npx wrangler pages secret put SITE_PASS --project-name brazilian-banks-desk
+```
+
+Rotating a password is just putting the secret again and redeploying; the old one dies with
+the deployment. `dist/` and `.wrangler/` are gitignored — the artifact is built, not versioned.
+
 ## Reading rules
 
 The desk refuses to print a number it cannot defend:

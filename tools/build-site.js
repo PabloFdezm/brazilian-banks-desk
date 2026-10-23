@@ -45,6 +45,10 @@ for (const entry of fs.readdirSync(ROOT, { withFileTypes: true })) {
 }
 for (const dir of DIRS) copyDir(path.join(ROOT, dir), path.join(OUT, dir));
 
+/* The access gate ships as _worker.js so Pages runs it in front of every asset. */
+const gate = path.join(ROOT, 'edge', '_worker.js');
+if (fs.existsSync(gate)) fs.copyFileSync(gate, path.join(OUT, '_worker.js'));
+
 /* Report what ships, and refuse a deploy that accidentally drags data/ in. */
 function size(dir) {
   let total = 0;
