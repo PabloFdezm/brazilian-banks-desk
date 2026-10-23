@@ -1,0 +1,1409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="IF.Data dashboard for Brazilian banks: profitability, cost of risk, peer comparison and the IFRS reconciliation." />
+<title>Farol · Brazilian Banks Dashboard</title>
+<style>
+  /* ── tokens ─────────────────────────────────────────────────────────── */
+  :root{
+    --bg:#F7F5EF;
+    --surface:#FFFCF6;
+    --fg:#17191B;
+    --muted:#6B6A63;
+    --border:#E2DCD1;
+    --accent:#2B4F7A;
+    --pos:#1C6B4C;
+    --neg:#A63A20;
+    --warn:#8A6A1F;
+
+    --accent-soft:color-mix(in oklch, var(--accent) 9%, transparent);
+    --fg-soft:color-mix(in oklch, var(--fg) 5%, transparent);
+    --hair:color-mix(in oklch, var(--fg) 24%, transparent);
+
+    --font-display:'Iowan Old Style','Charter','Palatino Linotype','Book Antiqua',Georgia,serif;
+    --font-body:'Segoe UI',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    --font-mono:'Cascadia Mono',ui-monospace,'SF Mono',Consolas,Menlo,monospace;
+
+    --max:1400px;
+    --pad:32px;
+    --radius:10px;
+    --radius-lg:14px;
+    color-scheme:light;
+    accent-color:var(--accent);
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--fg);
+    font-family:var(--font-body);font-size:14px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  p{margin:0;text-wrap:pretty}
+  h1,h2,h3,h4{margin:0;text-wrap:balance}
+  button{font:inherit;color:inherit}
+  input,select{font:inherit;color:inherit}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:color-mix(in oklch,var(--accent) 22%,transparent)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  .wrap{max-width:var(--max);margin-inline:auto;padding-inline:var(--pad)}
+  .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+  /* ── app bar ────────────────────────────────────────────────────────── */
+  .appbar{
+    position:sticky;top:0;z-index:40;
+    background:color-mix(in oklch, var(--bg) 93%, transparent);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border);
+  }
+  .appbar-in{height:60px;display:flex;align-items:center;gap:16px}
+  .brand{display:flex;align-items:center;gap:9px;flex:none}
+  .brand svg{width:21px;height:21px;color:var(--accent)}
+  .brand-name{font-family:var(--font-display);font-size:19px;font-weight:600;letter-spacing:-.01em}
+  .brand-sub{
+    font-family:var(--font-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);border-left:1px solid var(--border);padding-left:14px;margin-left:5px;
+  }
+  .spacer{flex:1}
+  .asof{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.02em;color:var(--muted);white-space:nowrap}
+  .selwrap{position:relative;flex:none}
+  .selwrap::after{
+    content:'▾';position:absolute;right:10px;top:50%;transform:translateY(-52%);
+    font-size:9px;color:var(--muted);pointer-events:none;
+  }
+  .sel{
+    appearance:none;height:34px;padding:0 28px 0 11px;border:1px solid var(--border);
+    background:var(--surface);border-radius:8px;font-family:var(--font-mono);font-size:11.5px;
+    letter-spacing:.02em;cursor:pointer;
+  }
+  .sel:hover{border-color:var(--hair)}
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;
+    border:1px solid var(--border);background:var(--surface);border-radius:8px;
+    font-size:12px;font-weight:500;color:var(--fg);cursor:pointer;
+    transition:background .15s ease,border-color .15s ease,color .15s ease;
+  }
+  .btn:hover{background:var(--fg-soft);border-color:var(--hair)}
+  .btn svg{width:14px;height:14px}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+  .btn.ghost:hover{color:var(--fg);background:var(--fg-soft)}
+  .btn[disabled]{opacity:.5;cursor:default}
+
+  /* ── masthead ───────────────────────────────────────────────────────── */
+  .masthead{padding-top:44px;padding-bottom:26px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:44px;align-items:end}
+  .eyebrow{
+    font-family:var(--font-mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--muted);display:flex;align-items:center;gap:9px;
+  }
+  .eyebrow::before{content:'';width:18px;height:1px;background:color-mix(in oklch,var(--fg) 40%,transparent)}
+  h1{font-family:var(--font-display);font-size:clamp(30px,3.4vw,44px);line-height:1.06;letter-spacing:-.022em;font-weight:600;margin-top:14px;max-width:26ch}
+  .dek{margin-top:14px;max-width:70ch;color:var(--muted);font-size:14.5px;line-height:1.55}
+  .facts{display:flex;gap:30px;padding-bottom:4px}
+  .fact{display:flex;flex-direction:column;gap:4px}
+  .fact b{font-family:var(--font-mono);font-size:19px;font-weight:500;letter-spacing:-.02em;line-height:1.1}
+  .fact span{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+  /* ── toolbar / chips ────────────────────────────────────────────────── */
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:22px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{
+    display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;
+    border:1px solid var(--border);background:transparent;border-radius:999px;
+    font-size:12px;color:var(--muted);cursor:pointer;
+    transition:background .15s ease,color .15s ease,border-color .15s ease;
+  }
+  .chip:hover{color:var(--fg);border-color:var(--hair)}
+  .chip[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+  .chip i{font-family:var(--font-mono);font-size:9.5px;font-style:normal;opacity:.6}
+  .toolbar-note{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;color:var(--muted);white-space:nowrap}
+
+  /* ── sections ───────────────────────────────────────────────────────── */
+  .section{padding-bottom:6px}
+  .sec-head{
+    display:flex;align-items:flex-end;justify-content:space-between;gap:28px;
+    border-top:1px solid var(--fg);margin-top:42px;padding-top:13px;margin-bottom:16px;
+  }
+  .sec-no{
+    font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted);
+    display:block;margin-bottom:5px;
+  }
+  .sec-title{font-family:var(--font-display);font-size:23px;line-height:1.15;letter-spacing:-.015em;font-weight:600}
+  .sec-note{font-size:11.5px;line-height:1.45;color:var(--muted);max-width:46ch;text-align:right}
+  .sec-note b{color:var(--fg);font-weight:500}
+
+  /* ── KPI strip ──────────────────────────────────────────────────────── */
+  .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-block:1px solid var(--border)}
+  .kpi{padding:16px 18px 18px;border-left:1px solid var(--border);min-width:0}
+  .kpi:first-child{border-left:0;padding-left:0}
+  .kpi-lab{
+    display:flex;justify-content:space-between;gap:8px;
+    font-family:var(--font-mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+  }
+  .kpi-lab em{font-style:normal;opacity:.75}
+  .kpi-val{font-family:var(--font-mono);font-size:29px;font-weight:500;line-height:1.15;letter-spacing:-.035em;margin-top:9px}
+  .kpi-val .u{font-size:12px;letter-spacing:0;color:var(--muted);margin-left:2px}
+  .kpi-d{margin-top:7px;display:flex;align-items:baseline;gap:6px;font-family:var(--font-mono);font-size:10px}
+  .kpi-d .note{color:var(--muted);font-size:9.5px}
+  .kpi-foot{margin-top:14px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .up{color:var(--pos)}
+  .down{color:var(--neg)}
+  .flat{color:var(--muted)}
+
+  /* ── panels ─────────────────────────────────────────────────────────── */
+  .split{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:18px;align-items:start}
+  .split-even{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px 18px;min-width:0}
+  .ph{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:10px}
+  .ph h3{font-family:var(--font-display);font-size:18px;letter-spacing:-.012em;font-weight:600;line-height:1.25}
+  .ph p{margin-top:3px;font-size:11px;color:var(--muted);line-height:1.45}
+  .ph-link{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;padding-top:4px}
+
+  .tabs{display:flex;gap:2px;flex-wrap:wrap}
+  .tab{
+    background:none;border:0;border-bottom:1.5px solid transparent;padding:5px 9px 6px;
+    font-size:11.5px;color:var(--muted);cursor:pointer;transition:color .15s ease,border-color .15s ease;
+  }
+  .tab:hover{color:var(--fg)}
+  .tab[aria-pressed="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+
+  .chart-host{min-height:120px}
+  .chart-host svg{display:block;overflow:visible}
+  .empty{padding:48px 0;text-align:center;color:var(--muted);font-size:12px}
+  svg .ax{font-family:var(--font-mono);font-size:9.5px;fill:var(--muted)}
+  svg .ax-strong{font-family:var(--font-mono);font-size:9.5px;fill:var(--fg)}
+  svg .dot-label{font-family:var(--font-mono);font-size:9px;fill:var(--muted);letter-spacing:.01em}
+  svg .dot-label.sel{fill:var(--accent)}
+
+  .legend{display:flex;flex-wrap:wrap;gap:4px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+  .lg{
+    display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;background:none;
+    border-radius:6px;padding:5px 7px;cursor:pointer;font-size:11px;color:var(--muted);transition:background .12s ease,color .12s ease;
+  }
+  .lg:hover{background:var(--fg-soft);color:var(--fg)}
+  .lg i{width:14px;height:2px;border-radius:2px;background:color-mix(in oklch,var(--muted) 55%,transparent);flex:none}
+  .lg[aria-pressed="true"]{color:var(--fg)}
+  .lg[aria-pressed="true"] i{background:var(--accent);height:3px}
+  .lg b{font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+  .lg[aria-pressed="true"] b{color:var(--fg)}
+
+  /* ── focus card ─────────────────────────────────────────────────────── */
+  .focus{padding:20px 22px 18px}
+  .focus-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .focus-kicker{font-family:var(--font-mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+  .focus h3{font-family:var(--font-display);font-size:25px;line-height:1.1;letter-spacing:-.02em;font-weight:600;margin-top:7px}
+  .focus-cat{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.05em;color:var(--muted);margin-top:6px}
+  .rank-badge{
+    font-family:var(--font-mono);font-size:9.5px;letter-spacing:.04em;color:var(--muted);
+    border:1px solid var(--border);border-radius:999px;padding:5px 9px;white-space:nowrap;
+  }
+  .focus-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-top:18px}
+  .focus-roe{font-family:var(--font-mono);font-size:46px;line-height:1;letter-spacing:-.045em;font-weight:500}
+  .focus-roe-lab{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .spark{height:44px;margin-top:8px}
+  .spark-svg{display:block;width:100%;height:44px}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:9px;overflow:hidden;margin:14px 0 0}
+  .metrics div{background:var(--surface);padding:9px 11px;min-width:0}
+  .metrics dt{font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .metrics dd{margin:4px 0 0;font-family:var(--font-mono);font-size:14px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .focus-note{font-size:11px;line-height:1.5;color:var(--muted);margin-top:13px;border-top:1px solid var(--border);padding-top:11px}
+  .focus-note b{color:var(--fg);font-weight:500}
+
+  /* ── risk panel ─────────────────────────────────────────────────────── */
+  .npl-vals{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:4px 0 10px}
+  .npl-vals .sw{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:1px}
+  .npl-vals .sw.acc{background:var(--accent)}
+  .npl-vals .sw.mut{background:var(--muted)}
+  .npl-vals span{display:block;font-family:var(--font-mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .npl-vals b{display:inline-block;font-family:var(--font-mono);font-size:24px;font-weight:500;letter-spacing:-.03em;margin-top:4px;font-variant-numeric:tabular-nums}
+  .npl-vals em{font-family:var(--font-mono);font-size:9.5px;font-style:normal;margin-left:6px}
+  .mods{margin-top:12px;border-top:1px solid var(--border);padding-top:12px}
+  .mods-head{display:flex;justify-content:space-between;gap:10px;font-family:var(--font-mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .mod{display:grid;grid-template-columns:118px minmax(0,1fr) 42px;align-items:center;gap:9px;padding:3px 0}
+  .mod span{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mod-track{height:5px;background:color-mix(in oklch,var(--fg) 7%,transparent);border-radius:3px;overflow:hidden}
+  .mod-track i{display:block;height:100%;background:color-mix(in oklch,var(--fg) 58%,transparent);border-radius:3px}
+  .mod-track i.top{background:var(--accent)}
+  .mod b{font-family:var(--font-mono);font-size:10px;font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+  .caveat{font-size:10px;line-height:1.45;color:var(--muted);margin-top:11px;border-top:1px solid var(--border);padding-top:9px}
+
+  /* ── tables ─────────────────────────────────────────────────────────── */
+  .table-tools{display:flex;align-items:center;gap:14px}
+  .search{display:flex;align-items:center;gap:7px;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+  .search svg{width:13px;height:13px;color:var(--muted);flex:none}
+  .search input{border:0;background:none;outline:none;width:170px;font-size:12px;color:var(--fg)}
+  .search input::placeholder{color:var(--muted)}
+  .search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .count-note{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
+  .tbl-wrap{border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:auto;max-height:590px;scrollbar-width:thin}
+  table.ds{width:100%;border-collapse:separate;border-spacing:0;min-width:860px}
+  table.ds thead th{
+    position:sticky;top:0;z-index:2;background:var(--surface);padding:0;
+    border-bottom:1px solid var(--border);text-align:right;font-weight:500;
+  }
+  table.ds thead th.rank{width:42px;text-align:center;font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.06em}
+  table.ds thead button{
+    display:flex;align-items:center;justify-content:flex-end;gap:5px;width:100%;padding:9px 12px;
+    background:none;border:0;cursor:pointer;font-family:var(--font-mono);font-size:9.5px;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;
+  }
+  table.ds thead th.name button{justify-content:flex-start}
+  table.ds thead button:hover{color:var(--fg)}
+  table.ds thead .ar{font-size:8px;opacity:.45}
+  table.ds thead th[aria-sort] .ar{opacity:1;color:var(--accent)}
+  table.ds thead th[aria-sort] button{color:var(--fg)}
+  table.ds tbody td{
+    padding:8px 12px;border-bottom:1px solid var(--border);text-align:right;
+    font-family:var(--font-mono);font-size:11.5px;font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  table.ds tbody tr:last-child td{border-bottom:0}
+  table.ds tbody tr{cursor:pointer}
+  table.ds tbody tr:hover{background:var(--fg-soft)}
+  table.ds tbody tr[aria-selected="true"]{background:var(--accent-soft)}
+  table.ds tbody tr[aria-selected="true"]:hover{background:color-mix(in oklch,var(--accent) 14%,transparent)}
+  table.ds tbody tr[aria-selected="true"] .nm{color:var(--accent)}
+  table.ds td.rank{text-align:center;color:var(--muted);font-size:10px}
+  table.ds td.name{text-align:left;white-space:normal;min-width:190px;padding-block:9px}
+  .nm{display:block;font-family:var(--font-body);font-size:12.5px;font-weight:500;letter-spacing:-.005em}
+  .cat{display:block;font-family:var(--font-mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+  td .sub{display:block;font-style:normal;font-size:9px;margin-top:2px;letter-spacing:0}
+  .share{display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px}
+  .share .bar{width:52px;height:3px;background:color-mix(in oklch,var(--fg) 9%,transparent);border-radius:2px;overflow:hidden}
+  .share .bar b{display:block;height:100%;background:color-mix(in oklch,var(--fg) 45%,transparent)}
+  .tbl-empty{padding:44px 12px;text-align:center;color:var(--muted);font-size:12px}
+  .tbl-foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:9px;font-family:var(--font-mono);font-size:9.5px;color:var(--muted)}
+
+  table.bridge{width:100%;border-collapse:collapse;min-width:760px}
+  table.bridge thead th{position:sticky;top:0;z-index:2;background:var(--surface)}
+  table.bridge th{
+    text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);
+    font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;
+  }
+  table.bridge th.n,table.bridge td.n{text-align:right}
+  table.bridge td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;font-size:11.5px}
+  table.bridge tr:last-child td{border-bottom:0}
+  table.bridge tbody tr:hover{background:var(--fg-soft)}
+  table.bridge td.bank{font-weight:500;white-space:nowrap}
+  table.bridge td.n{font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  table.bridge td.note{color:var(--muted);font-size:10.5px;line-height:1.45;min-width:220px}
+  .flag{font-family:var(--font-mono);font-size:10px;letter-spacing:.02em}
+  .flag.ok{color:var(--muted)}
+  .flag.warn{color:var(--warn)}
+  .flag.bad{color:var(--neg)}
+  .bridge-sum{margin:0 0 14px;font-size:11.5px;color:var(--muted)}
+  .bridge-sum b{color:var(--fg);font-weight:500}
+
+  /* ── drawer ─────────────────────────────────────────────────────────── */
+  .scrim{position:fixed;inset:0;background:color-mix(in oklch,var(--fg) 32%,transparent);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:50}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .drawer{
+    position:fixed;top:0;right:0;bottom:0;width:min(470px,100%);z-index:60;background:var(--surface);
+    border-left:1px solid var(--border);transform:translateX(102%);transition:transform .24s ease;
+    overflow:auto;padding:26px 28px 40px;
+  }
+  .drawer.on{transform:none}
+  .drawer-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:8px}
+  .drawer h2{font-family:var(--font-display);font-size:24px;letter-spacing:-.015em;font-weight:600;line-height:1.15}
+  .drawer p{font-size:12px;line-height:1.55;color:var(--muted);margin-top:10px}
+  .drawer h4{font-family:var(--font-mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);margin:24px 0 8px;padding-top:14px;border-top:1px solid var(--border)}
+  .drawer dl{margin:0}
+  .def{border-top:1px solid var(--border);padding:9px 0}
+  .def:first-of-type{border-top:0}
+  .def dt{font-size:12.5px;font-weight:500}
+  .def dd{margin:3px 0 0;font-size:11.5px;line-height:1.5;color:var(--muted)}
+  .def code{font-family:var(--font-mono);font-size:10.5px;color:var(--fg);background:var(--fg-soft);padding:1px 5px;border-radius:4px}
+
+  /* ── tooltip / toast / footer ───────────────────────────────────────── */
+  .tip{
+    position:fixed;z-index:80;pointer-events:none;background:var(--fg);color:var(--bg);
+    padding:8px 10px;border-radius:7px;font-size:10.5px;line-height:1.45;
+    box-shadow:0 10px 30px color-mix(in oklch,var(--fg) 24%,transparent);
+    opacity:0;transition:opacity .12s ease;max-width:280px;
+  }
+  .tip.on{opacity:1}
+  .tt-h{font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;opacity:.65;margin-bottom:4px}
+  .tt-r{display:flex;justify-content:space-between;gap:14px;font-size:10.5px}
+  .tt-r b{font-family:var(--font-mono);font-weight:500;font-variant-numeric:tabular-nums}
+  .tt-r.sel span,.tt-r.sel b{color:color-mix(in oklch,var(--accent) 55%,var(--bg))}
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translate(-50%,10px);z-index:90;
+    background:var(--fg);color:var(--bg);border-radius:8px;padding:9px 14px;font-size:11.5px;
+    opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  .pagefoot{border-top:1px solid var(--border);margin-top:44px;padding-block:26px 40px;font-size:11px;color:var(--muted)}
+  .foot-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:32px}
+  .foot-grid h4{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg);margin-bottom:7px}
+  .foot-grid p{font-size:11px;line-height:1.55;max-width:46ch}
+  .foot-grid b{font-family:var(--font-display);font-size:16px;color:var(--fg);font-weight:600}
+
+  /* ── responsive ─────────────────────────────────────────────────────── */
+  @media (max-width:1180px){
+    .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .kpi:nth-child(3n+1){border-left:0;padding-left:0}
+    .kpi:nth-child(n+4){border-top:1px solid var(--border)}
+    .kpi:first-child{padding-left:0}
+    .split{grid-template-columns:1fr}
+    .sec-note{max-width:52ch}
+  }
+  @media (max-width:920px){
+    :root{--pad:22px}
+    .masthead{grid-template-columns:1fr;gap:24px;padding-top:32px}
+    .facts{gap:24px}
+    .brand-sub,.asof{display:none}
+    .split-even{grid-template-columns:1fr}
+    .sec-head{flex-direction:column;align-items:flex-start;gap:8px}
+    .sec-note{text-align:left}
+    .foot-grid{grid-template-columns:1fr;gap:20px}
+    .toolbar{align-items:flex-start;flex-direction:column;gap:10px}
+  }
+  @media (max-width:620px){
+    :root{--pad:16px}
+    .chip{height:44px;padding:0 14px}
+    .btn{height:44px}
+    .sel{height:44px}
+    .tab{padding:10px 9px}
+    .lg{min-height:40px;padding:8px}
+    .drawer .btn{height:44px}
+    .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .kpi:nth-child(3n+1){border-left:1px solid var(--border);padding-left:18px}
+    .kpi:nth-child(2n+1){border-left:0;padding-left:0}
+    .kpi:nth-child(n+3){border-top:1px solid var(--border)}
+    .appbar-in{height:auto;flex-wrap:wrap;padding-block:10px;gap:10px}
+    .spacer{display:none}
+    .brand{flex:1 1 100%}
+    .btn-label{display:none}
+    .selwrap{flex:1}
+    .sel{width:100%}
+    .masthead h1{font-size:30px}
+    .facts{flex-wrap:wrap;gap:18px}
+    .fact b{font-size:16px}
+    .search input{width:120px}
+    .focus h3{font-size:22px}
+    .focus-roe{font-size:40px}
+    .ph{flex-direction:column;gap:8px}
+  }
+</style>
+</head>
+<body>
+
+<header class="appbar" data-od-id="appbar">
+  <div class="wrap appbar-in">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M12 21V9.5"/><path d="M7.5 21h9"/><path d="M8 9.5a4 4 0 0 1 8 0z" fill="currentColor" fill-opacity=".14"/>
+        <path d="M2.5 6.5 5.5 8M21.5 6.5 18.5 8"/>
+      </svg>
+      <span class="brand-name">Farol</span>
+      <span class="brand-sub">Brazilian banks</span>
+    </div>
+    <div class="spacer"></div>
+    <span class="asof">Data cut 30 Jun 2026</span>
+    <div class="selwrap">
+      <select class="sel" id="period" aria-label="Reporting quarter"></select>
+    </div>
+    <button class="btn ghost" id="openDefs" aria-haspopup="dialog" aria-controls="drawer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.2"/></svg>
+      <span class="btn-label">Definitions</span>
+    </button>
+    <button class="btn" id="exportCsv">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      Export CSV
+    </button>
+  </div>
+</header>
+
+<main>
+  <section class="wrap masthead" data-od-id="masthead">
+    <div>
+      <p class="eyebrow">Brazil · prudential banking panel</p>
+      <h1>Where Brazilian bank returns come from, and what they cost in risk.</h1>
+      <p class="dek">IF.Data balance sheets for 34 conglomerates, thirteen quarters deep. Compare profitability, funding, efficiency and asset quality without leaving the page.</p>
+    </div>
+    <div class="facts">
+      <div class="fact"><b>34</b><span>Institutions</span></div>
+      <div class="fact"><b>13</b><span>Quarters</span></div>
+      <div class="fact"><b id="factAssets">—</b><span>Panel assets</span></div>
+    </div>
+  </section>
+
+  <div class="wrap toolbar">
+    <div class="chips" id="chips" role="group" aria-label="Institution universe"></div>
+    <span class="toolbar-note">IF.Data · conglomerate level · R$ bn</span>
+  </div>
+
+  <section class="wrap section" data-od-id="section-pulse">
+    <div class="sec-head">
+      <div>
+        <span class="sec-no">01 — PULSE</span>
+        <h2 class="sec-title">Sector pulse</h2>
+      </div>
+      <p class="sec-note">Aggregates for the selected universe. Ratios are equity-, credit- or asset-weighted; deltas compare with the prior quarter.</p>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="kpi-foot">
+      <span id="kpiNote">—</span>
+      <span>Source: BCB IF.Data · TTM ratios</span>
+    </div>
+  </section>
+
+  <section class="wrap section" data-od-id="section-profitability">
+    <div class="sec-head">
+      <div>
+        <span class="sec-no">02 — PROFITABILITY</span>
+        <h2 class="sec-title">Returns, quarter by quarter</h2>
+      </div>
+      <p class="sec-note">One institution in focus, the rest in context. Pick a name in the legend, or any row in the peer table.</p>
+    </div>
+    <div class="split">
+      <div class="panel">
+        <div class="ph">
+          <div>
+            <h3 id="lineTitle">Return on equity</h3>
+            <p id="lineSub">TTM, per cent</p>
+          </div>
+          <div class="tabs" role="group" aria-label="Chart metric">
+            <button class="tab" type="button" data-metric="roe" aria-pressed="true">ROE</button>
+            <button class="tab" type="button" data-metric="nim" aria-pressed="false">Margin</button>
+            <button class="tab" type="button" data-metric="cor" aria-pressed="false">Cost of risk</button>
+            <button class="tab" type="button" data-metric="eff" aria-pressed="false">Efficiency</button>
+          </div>
+        </div>
+        <div class="chart-host" id="lineChart"></div>
+        <div class="legend" id="lineLegend"></div>
+      </div>
+
+      <aside class="panel focus" id="focusPanel" data-od-id="focus-card">
+        <div class="focus-top">
+          <div>
+            <span class="focus-kicker">In focus</span>
+            <h3 id="focusName">—</h3>
+            <p class="focus-cat" id="focusMeta">—</p>
+          </div>
+          <span class="rank-badge" id="focusRank">—</span>
+        </div>
+        <div class="focus-hero">
+          <div>
+            <div class="focus-roe-lab">ROE · TTM</div>
+            <div class="focus-roe" id="focusRoe">—</div>
+          </div>
+          <div class="kpi-d" id="focusDelta"></div>
+        </div>
+        <div class="spark" id="focusSpark"></div>
+        <dl class="metrics" id="focusMetrics" aria-label="Key metrics"></dl>
+        <p class="focus-note" id="focusNote"></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="wrap section" data-od-id="section-positioning">
+    <div class="sec-head">
+      <div>
+        <span class="sec-no">03 — POSITIONING &amp; RISK</span>
+        <h2 class="sec-title">Cost discipline against returns</h2>
+      </div>
+      <p class="sec-note">Area is total assets. Dashed rules mark the peer medians. Asset quality is shown at system level, as published.</p>
+    </div>
+    <div class="split split-even">
+      <div class="panel">
+        <div class="ph">
+          <div>
+            <h3>Return versus efficiency</h3>
+            <p>ROE against the efficiency ratio · <span id="scatterCount">—</span></p>
+          </div>
+          <span class="ph-link">Click a dot</span>
+        </div>
+        <div class="chart-host" id="scatter"></div>
+      </div>
+
+      <div class="panel">
+        <div class="ph">
+          <div>
+            <h3>System asset quality</h3>
+            <p>NPL, share of credit ≥15 days overdue</p>
+          </div>
+          <span class="ph-link" id="riskPeriod">—</span>
+        </div>
+        <div class="npl-vals">
+          <div><span><i class="sw acc"></i>Households</span><b id="nplPF">—</b><em id="nplPFD" class="flat"></em></div>
+          <div><span><i class="sw mut"></i>Corporates</span><b id="nplPJ">—</b><em id="nplPJD" class="flat"></em></div>
+        </div>
+        <div class="chart-host" id="riskChart"></div>
+        <div class="mods">
+          <div class="mods-head"><span>Household NPL by product</span><span id="modsPeriod">—</span></div>
+          <div id="mods"></div>
+        </div>
+        <p class="caveat" id="riskCaveat">—</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap section" data-od-id="section-peers">
+    <div class="sec-head">
+      <div>
+        <span class="sec-no">04 — PEERS</span>
+        <h2 class="sec-title">Peer comparison</h2>
+      </div>
+      <div class="table-tools">
+        <label class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+          <input id="search" type="search" placeholder="Filter institutions" aria-label="Filter institutions" />
+        </label>
+        <span class="count-note" id="peerCount">—</span>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="ds" id="peerTable">
+        <thead>
+          <tr>
+            <th class="rank" scope="col" title="Rank by total assets within the current filter">#</th>
+            <th class="name" scope="col"><button type="button" data-sort="name">Institution<span class="ar" aria-hidden="true"></span></button></th>
+            <th scope="col"><button type="button" data-sort="a">Assets<span class="ar" aria-hidden="true"></span></button></th>
+            <th scope="col"><button type="button" data-sort="cr">Credit<span class="ar" aria-hidden="true"></span></button></th>
+            <th scope="col"><button type="button" data-sort="roe">ROE<span class="ar" aria-hidden="true"></span></button></th>
+            <th scope="col"><button type="button" data-sort="cor">Cost of risk<span class="ar" aria-hidden="true"></span></button></th>
+            <th scope="col"><button type="button" data-sort="cov">Coverage<span class="ar" aria-hidden="true"></span></button></th>
+            <th scope="col"><button type="button" data-sort="eff">Efficiency<span class="ar" aria-hidden="true"></span></button></th>
+            <th scope="col"><button type="button" data-sort="share">Share<span class="ar" aria-hidden="true"></span></button></th>
+          </tr>
+        </thead>
+        <tbody id="peerBody"></tbody>
+      </table>
+    </div>
+    <div class="tbl-foot">
+      <span id="tableFoot">—</span>
+      <span>R$ bn · ratios TTM · sorted by <span id="sortName">assets</span></span>
+    </div>
+  </section>
+
+  <section class="wrap section" data-od-id="section-bridge">
+    <div class="sec-head">
+      <div>
+        <span class="sec-no">05 — BRIDGE</span>
+        <h2 class="sec-title">Regulatory against reported</h2>
+      </div>
+      <p class="sec-note">Where IF.Data and the IFRS filing disagree, the note explains the bridge. Differences are IF.Data minus reported, over reported.</p>
+    </div>
+    <p class="bridge-sum" id="bridgeSum">—</p>
+    <div class="tbl-wrap" style="max-height:520px">
+      <table class="bridge">
+        <thead>
+          <tr>
+            <th scope="col">Institution</th>
+            <th scope="col">Line item</th>
+            <th class="n" scope="col">Reported</th>
+            <th class="n" scope="col">IF.Data</th>
+            <th class="n" scope="col">Bridge</th>
+            <th scope="col">Note</th>
+          </tr>
+        </thead>
+        <tbody id="bridgeBody"></tbody>
+      </table>
+    </div>
+    <div class="tbl-foot">
+      <span>R$ bn · reported figures from the latest IFRS filing (1H26)</span>
+      <button class="btn ghost" id="bridgeToggle" style="height:26px;padding:0 8px">Show all 26</button>
+    </div>
+  </section>
+</main>
+
+<footer class="pagefoot" data-od-id="footer">
+  <div class="wrap foot-grid">
+    <div>
+      <b>Farol Research</b>
+      <p style="margin-top:8px">A working prototype for equity research and portfolio management on Brazilian banks. All figures are computed from the local IF.Data pipeline; no live market data is shown.</p>
+    </div>
+    <div>
+      <h4>Source</h4>
+      <p>Banco Central do Brasil, IF.Data — prudential conglomerates, Type 1. Reported figures from IFRS filings. Panel: 13 quarters ending 2026 Q2.</p>
+    </div>
+    <div>
+      <h4>Use</h4>
+      <p>Research and illustration only. Not investment advice. Conglomerate figures are not directly comparable with the listed holding company.</p>
+    </div>
+  </div>
+</footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true" inert>
+  <div class="drawer-top">
+    <div>
+      <span class="focus-kicker">Methodology</span>
+      <h2 id="drawerTitle">How to read this page</h2>
+    </div>
+    <button class="btn ghost" id="closeDefs" aria-label="Close definitions" style="height:40px;width:40px;padding:0;justify-content:center">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <p>The panel tracks 34 institutions in IF.Data: the five large universal banks, the federal and regional public banks, the listed mid-caps and the payments and fintech lenders.</p>
+
+  <h4>Definitions</h4>
+  <dl>
+    <div class="def"><dt>ROE (TTM)</dt><dd>Net income over the last four quarters ÷ average shareholders' equity over the same period.</dd></div>
+    <div class="def"><dt>ROA (TTM)</dt><dd>Net income TTM ÷ average total assets.</dd></div>
+    <div class="def"><dt>Intermediation margin (TTM)</dt><dd>Net interest income plus payment-transaction revenue, TTM ÷ average total assets.</dd></div>
+    <div class="def"><dt>Cost of risk</dt><dd>Credit provisions TTM ÷ total credit portfolio. Higher is worse.</dd></div>
+    <div class="def"><dt>Coverage</dt><dd>Expected credit loss allowance ÷ gross credit. Higher is more conservative.</dd></div>
+    <div class="def"><dt>Efficiency ratio</dt><dd>Personnel and administrative expenses ÷ (net interest income + fees + services + payment revenue). Higher is worse.</dd></div>
+    <div class="def"><dt>NPL (system)</dt><dd>Loans at least 15 days overdue ÷ the credit portfolio. Published at panel level, not per institution.</dd></div>
+  </dl>
+
+  <h4>Aggregation</h4>
+  <p>Stock items are sums. ROE is aggregate net income over aggregate equity; cost of risk and coverage are weighted by credit; efficiency is the median institution, to avoid one outlier dominating a small sample. Shares are of panel assets at the selected quarter.</p>
+
+  <h4>Known breaks</h4>
+  <p>The BCB changed the total-panel NPL definition to problem assets (ratings E–H) in 2025 Q1. This page charts household and corporate NPL at ≥15 days, which remain continuous; the total series is excluded. The 2024 Q4 credit report is missing from the source, so the risk series breaks there rather than interpolating.</p>
+
+  <h4>Scope</h4>
+  <p>IF.Data reports the prudential conglomerate. That is wider than the individual bank and narrower than the listed holding: insurance, for example, sits in the holding and explains most of the bridge in section 05.</p>
+</aside>
+
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="application/json" id="dataset">{"periods":["202306","202309","202312","202403","202406","202409","202412","202503","202506","202509","202512","202603","202606"],"banks":[{"id":"C0080099","name":"Itaú Unibanco","cat":"Core","tcb":"B1","a":[2325.5661,2411.6962,2417.0402,2502.5666,2636.9243,2694.6916,2732.3124,2500.9428,2565.4303,2652.2836,2739.2151,2834.3557,2846.4176],"cr":[1082.0426,1101.0188,1101.8635,1128.0001,1199.7499,1235.6097,1282.373,1140.5915,1150.0117,1161.0102,1232.0774,1221.12,1235.2308],"eq":[179.5785,183.389,189.9363,184.8023,193.2939,202.4925,211.8142,204.0148,217.4835,228.7201,227.7617,232.4523,249.7662],"ni":[32.4772,32.5836,34.47,35.9418,37.3721,39.7786,40.9336,42.2451,43.6002,44.926,46.7189,47.7361,48.759],"dep":[934.4934,944.5356,963.893,977.2862,1032.2032,1032.2647,1067.8468,1026.7801,1028.2363,1049.5837,1126.2441,1111.7823,1144.4079],"roe":[0.1904,0.1862,0.1912,0.1998,0.2005,0.2062,0.2038,0.2173,0.2123,0.2084,0.2126,0.2187,0.2087],"roa":[0.0148,0.0142,0.0148,0.015,0.0151,0.0156,0.0159,0.0169,0.0168,0.0168,0.0171,0.0179,0.018],"nim":[0.0281,0.0258,0.0255,0.0254,0.0259,0.0254,0.0264,0.0287,0.0261,0.0264,0.0325,0.0315,0.0322],"cor":[0.0344,0.0352,0.0329,0.032,0.0303,0.0261,0.0251,0.0285,0.0279,0.0315,0.0276,0.0279,0.0287],"cov":[0.0675,0.0685,0.0668,0.0653,0.063,0.0573,0.0549,0.0525,0.0516,0.0508,0.0497,0.0492,0.0493],"eff":[0.4733,0.4861,0.4885,0.4809,0.4731,0.482,0.478,0.4967,0.5559,0.5784,0.5166,0.5485,0.5341]},{"id":"C0080329","name":"Banco do Brasil","cat":"Core","tcb":"B1","a":[2079.9253,2227.0031,2152.7428,2282.3177,2334.5809,2442.4498,2409.7262,2420.9572,2438.5655,2538.2863,2453.521,2605.7232,2583.5688],"cr":[1020.6599,1042.9566,1074.8319,1100.2983,1132.9377,1158.3965,1220.0682,1121.9179,1126.9262,1103.471,1116.2804,1119.9511,1128.3992],"eq":[157.7773,161.0439,163.9432,169.2009,172.7322,178.6241,182.0896,175.5794,175.3079,178.5903,184.8967,187.0125,181.8384],"ni":[33.8376,34.222,34.7324,35.4223,36.0557,36.5235,36.116,33.8976,27.9824,22.0106,18.2297,14.6223,14.7409],"dep":[793.372,799.6282,835.6849,822.1144,845.4908,873.5241,899.0063,890.6931,906.8703,921.7276,931.0704,990.9702,1025.1576],"roe":[0.2231,0.2216,0.2184,0.2157,0.2182,0.2151,0.2087,0.1966,0.1608,0.1232,0.0993,0.0807,0.0825],"roa":[0.0163,0.0157,0.0167,0.0162,0.0163,0.0156,0.0158,0.0144,0.0117,0.0088,0.0075,0.0058,0.0059],"nim":[0.0228,0.0223,0.0254,0.0236,0.026,0.0242,0.0246,0.0218,0.0166,0.0119,0.0083,0.0064,0.0071],"cor":[0.0268,0.0291,0.0304,0.0351,0.0353,0.0366,0.0345,0.0394,0.0459,0.0527,0.0599,0.0635,0.0641],"cov":[0.0588,0.0594,0.0612,0.0611,0.0617,0.0637,0.061,0.0763,0.0814,0.0882,0.0886,0.0898,0.0932],"eff":[0.4985,0.5063,0.4928,0.5033,0.4703,0.4769,0.4769,0.5195,0.6314,0.768,0.9552,1.0508,1.0047]},{"id":"C0080738","name":"Caixa","cat":"Federal & unlisted","tcb":"B1","a":[1721.9057,1740.2696,1826.9629,1878.0397,1907.044,1982.0893,2026.1227,2088.6649,2118.1143,2209.6886,2219.8546,2357.6094,2385.9954],"cr":[1104.721,1134.8007,1168.4545,1193.5212,1224.8682,1262.0701,1290.6836,1213.6284,1239.1997,1274.7435,1315.1482,1343.3792,1379.1965],"eq":[87.5058,90.4036,93.5262,96.0208,99.3084,102.3712,104.3428,104.5004,109.599,113.05,112.3368,115.3352,118.8001],"ni":[9.724,9.17,11.1435,11.5768,12.2263,12.1955,12.6124,15.7276,16.0304,16.4402,14.5807,12.2868,12.4479],"dep":[640.5488,640.319,716.3074,707.533,743.2354,757.1738,780.5835,772.8909,794.3724,814.6275,826.7223,860.311,874.4599],"roe":[0.115,0.1043,0.1246,0.1264,0.1309,0.1265,0.1275,0.1569,0.1535,0.1526,0.1346,0.1118,0.109],"roa":[0.0061,0.0056,0.0065,0.0066,0.0067,0.0066,0.0065,0.0079,0.008,0.0078,0.0069,0.0055,0.0055],"nim":[0.0242,0.0237,0.0253,0.0254,0.0252,0.0254,0.0237,0.0233,0.023,0.0204,0.0184,0.016,0.0146],"cor":[0.0159,0.017,0.016,0.0157,0.015,0.0133,0.0132,0.0118,0.0099,0.0113,0.0117,0.0151,0.0179],"cov":[0.0472,0.0473,0.0443,0.044,0.0428,0.0407,0.0401,0.0415,0.0428,0.044,0.045,0.047,0.0473],"eff":[0.6108,0.6068,0.5559,0.5589,0.5607,0.5601,0.5965,0.5965,0.611,0.6657,0.742,0.7961,0.8394]},{"id":"C0080075","name":"Bradesco","cat":"Core","tcb":"B1","a":[1554.3997,1595.2912,1606.1654,1639.0094,1685.5788,1689.3975,1721.9877,1674.1515,1739.1413,1794.8488,1911.2493,1990.6258,2015.2237],"cr":[747.4419,752.7842,740.4489,770.6419,817.7023,851.7924,872.7309,811.2322,822.9212,843.8348,888.4838,896.2159,929.9281],"eq":[160.3699,161.8597,162.5738,161.9893,161.1299,163.7235,161.6568,167.1639,170.6318,173.5418,176.42,177.2246,185.191],"ni":[15.4786,14.8914,15.1582,15.0851,15.2772,15.8824,19.1126,20.7227,22.0532,22.9993,24.5874,23.8043,24.8225],"dep":[596.7852,617.1032,628.2123,611.6316,621.1639,619.4945,651.9298,626.887,644.7887,669.6313,730.0931,754.2728,784.6003],"roe":[0.0984,0.0929,0.0952,0.0948,0.095,0.0976,0.1179,0.1259,0.1329,0.1364,0.1455,0.1382,0.1395],"roa":[0.0103,0.0092,0.0097,0.0095,0.0094,0.0097,0.0115,0.0125,0.0129,0.0132,0.0135,0.013,0.0132],"nim":[0.0138,0.0123,0.0141,0.0148,0.0174,0.0186,0.0208,0.0181,0.0147,0.0128,0.0149,0.0172,0.0183],"cor":[0.0499,0.0538,0.05,0.0465,0.0428,0.0398,0.0382,0.0398,0.0396,0.0399,0.0388,0.0418,0.042],"cov":[0.1035,0.101,0.0952,0.0907,0.0828,0.0804,0.0771,0.0759,0.0742,0.0713,0.068,0.0655,0.065],"eff":[0.8868,0.899,0.8647,0.8351,0.7578,0.7257,0.6812,0.7742,0.8934,1.0119,0.9783,0.8927,0.8538]},{"id":"C0080185","name":"Santander Brasil","cat":"Core","tcb":"B1","a":[1133.2059,1199.453,1190.9539,1204.6814,1281.3735,1313.354,1371.781,1263.0988,1256.0848,1286.2416,1290.8656,1316.4731,1314.9331],"cr":[612.9186,614.7581,626.7348,637.6204,677.8497,670.1213,740.8536,534.4039,528.8554,536.6266,553.9464,547.0005,551.5858],"eq":[97.3926,94.869,95.7742,96.6818,98.2798,99.4605,99.068,99.3816,101.9372,103.4532,108.709,107.0479,106.7332],"ni":[9.6924,9.2771,9.6679,10.4493,11.468,12.0581,13.4432,14.337,14.9015,15.8093,16.3946,16.5168,16.3071],"dep":[439.5878,466.6888,475.7099,473.1328,497.1008,495.8758,495.5334,492.5049,487.7686,491.9349,491.6166,490.2661,505.0458],"roe":[0.1059,0.1015,0.1015,0.1086,0.1172,0.1241,0.138,0.1462,0.1489,0.1558,0.1578,0.16,0.1563],"roa":[0.009,0.0083,0.0085,0.0091,0.0095,0.0096,0.0105,0.0116,0.0117,0.0122,0.0123,0.0128,0.0127],"nim":[0.0166,0.016,0.0174,0.0197,0.0127,0.0148,0.0121,0.0183,0.0244,0.0226,0.0325,0.0362,0.0392],"cor":[0.0428,0.0419,0.0419,0.033,0.038,0.0346,0.0299,0.0431,0.0435,0.0489,0.0464,0.0456,0.0439],"cov":[0.0785,0.0754,0.0739,0.0697,0.0722,0.0734,0.0723,0.0823,0.0801,0.0811,0.0805,0.0821,0.0817],"eff":[0.5996,0.6027,0.5788,0.5409,0.6419,0.5957,0.636,0.5723,0.507,0.5517,0.451,0.4211,0.3993]},{"id":"C0081847","name":"BNDES","cat":"Federal & unlisted","tcb":"B4","a":[706.8146,719.339,732.4992,739.7063,778.0014,807.1031,840.8243,860.0788,887.6378,905.5545,962.0201,994.3842,1057.9606],"cr":[309.8117,312.4998,316.8042,322.8093,331.3768,332.5993,347.2437,366.0006,370.8481,377.6,402.2434,407.4468,416.3294],"eq":[140.6428,147.9583,151.3476,155.0098,160.07,169.1587,158.4644,168.2206,165.3359,168.5562,172.0379,191.7357,180.5381],"ni":[26.6307,21.989,21.9031,23.1778,25.7349,26.4391,26.3877,26.768,25.4217,23.6703,25.5716,23.3956,24.1801],"dep":[5.7494,5.6874,5.3115,5.238,5.0527,4.7891,4.8857,5.025,4.7634,4.5547,4.4023,4.2762,4.266],"roe":[0.1973,0.1543,0.155,0.1615,0.1712,0.1667,0.1703,0.1656,0.1562,0.1402,0.1547,0.13,0.1398],"roa":[0.037,0.0306,0.0309,0.0325,0.0347,0.0346,0.0335,0.0335,0.0305,0.0276,0.0284,0.0252,0.0249],"nim":[0.0531,0.047,0.0446,0.0452,0.046,0.0464,0.0495,0.0431,0.0314,0.0224,0.0158,0.0151,0.0153],"cor":[-0.0054,-0.0083,-0.0128,-0.0074,-0.0076,-0.011,-0.0028,-0.0086,-0.0063,-0.0013,-0.0048,0.0028,0.0024],"cov":[0.0392,0.0379,0.0326,0.0304,0.0292,0.0287,0.0308,0.0226,0.0232,0.0246,0.0225,0.0233,0.0227],"eff":[0.0762,0.087,0.0955,0.0951,0.0913,0.0903,0.0844,0.0963,0.1281,0.1827,0.2543,0.27,0.2658]},{"id":"C0080336","name":"BTG Pactual","cat":"Core","tcb":"B1","a":[457.7492,478.602,481.9484,555.0068,582.2636,588.5899,611.3904,572.9747,605.5491,631.0114,746.1026,785.84,858.3568],"cr":[174.96,172.4065,171.1882,195.2358,211.1473,206.6859,261.0438,182.6111,186.1116,192.6702,208.5164,211.0348,215.378],"eq":[51.396,51.6364,53.4806,55.9501,57.7668,62.5088,63.4933,65.0517,69.3353,72.2335,74.9173,78.1669,84.2503],"ni":[8.4064,8.8482,9.9246,10.565,10.9472,11.3927,11.7894,12.2256,13.4115,14.6807,15.947,17.3075,18.1994],"dep":[125.9149,131.2843,143.4191,160.59,161.3321,160.7517,153.2834,146.7915,152.7656,171.3114,179.0087,193.0592,211.8691],"roe":[0.1735,0.1796,0.1984,0.2022,0.2006,0.1996,0.2016,0.2021,0.211,0.2179,0.2304,0.2417,0.237],"roa":[0.0186,0.0195,0.0216,0.0209,0.0211,0.0214,0.0216,0.0217,0.0226,0.0241,0.0235,0.0255,0.0249],"nim":[0.0249,0.0337,0.0489,0.0413,0.0393,0.0339,0.0325,0.0313,0.0326,0.0363,0.0366,0.044,0.0476],"cor":[0.0213,0.0216,0.0132,0.0105,0.0108,0.0072,0.0069,0.0147,0.0206,0.031,0.0251,0.0269,0.0231],"cov":[0.048,0.0464,0.0364,0.0351,0.0388,0.0386,0.0396,0.0568,0.0651,0.0702,0.07,0.0738,0.0801],"eff":[0.6589,0.5448,0.4171,0.4516,0.4742,0.5338,0.554,0.5435,0.5719,0.5101,0.4628,0.4559,0.4009]},{"id":"C0084693","name":"Nubank","cat":"Core","tcb":"N1","a":[139.1441,160.5139,190.0374,194.0433,214.5007,219.2205,248.3375,244.398,269.6632,296.8859,345.3071,341.1247,363.3253],"cr":[64.4046,71.2471,81.9591,88.5588,95.4798,103.2305,116.4535,106.7701,114.7193,124.2294,137.3339,147.5717,152.3549],"eq":[8.2692,9.6983,11.2714,13.005,14.3645,16.2681,19.1835,18.8869,18.8701,19.4446,23.1524,21.1282,23.3446],"ni":[2.7274,3.9662,4.7323,5.7071,7.1003,8.2089,9.5128,10.605,11.4087,11.8022,12.6973,11.2513,10.8251],"dep":[87.0062,97.3018,112.6011,112.9396,123.7401,129.2794,143.6889,140.6702,152.356,163.0286,183.5703,176.1928,189.2536],"roe":[0.4633,0.5266,0.5453,0.5599,0.6274,0.6323,0.6247,0.6651,0.6866,0.661,0.5998,0.5624,0.5129],"roa":[0.022,0.0284,0.029,0.0354,0.0402,0.0432,0.0434,0.0484,0.0471,0.0457,0.0428,0.0384,0.0342],"nim":[0.0476,0.0507,0.0547,0.0673,0.0784,0.0864,0.0831,0.0802,0.0692,0.0569,0.0795,0.0785,0.0749],"cor":[0.1286,0.1341,0.1331,0.1432,0.1453,0.1476,0.1432,0.1736,0.1746,0.1793,0.179,0.1947,0.1955],"cov":[0.1703,0.1647,0.1627,0.1569,0.1666,0.1763,0.1743,0.3246,0.3464,0.3584,0.363,0.3602,0.3223],"eff":[0.6014,0.5663,0.5394,0.5125,0.466,0.437,0.4235,0.4701,0.5558,0.7038,0.5189,0.6261,0.6811]},{"id":"C0082475","name":"XP","cat":"Core","tcb":"B1","a":[171.0924,176.4173,186.9851,210.073,229.6053,251.6652,279.9086,285.285,274.5633,291.0351,293.9214,331.6402,305.2543],"cr":[45.7386,49.6134,49.3373,53.3898,53.7376,55.6449,67.9983,29.6951,36.7693,37.9635,38.9082,37.0088,40.0305],"eq":[9.984,8.1548,10.4992,8.7357,8.8443,8.9331,10.8282,11.7591,12.4083,12.6632,11.5625,11.5267,12.4803],"ni":[-0.0465,0.1702,0.3908,0.4398,0.618,0.6576,0.9093,1.0954,0.7974,0.7732,0.861,0.5711,1.0044],"dep":[38.792,36.6705,45.7192,42.9336,50.3838,67.6656,69.7225,73.0794,75.0988,76.0513,93.4058,84.5852,84.5528],"roe":[-0.0056,0.0195,0.0416,0.0481,0.0657,0.077,0.0853,0.1069,0.075,0.0716,0.0769,0.0491,0.0807],"roa":[-0.0003,0.0011,0.0024,0.0025,0.0031,0.0031,0.0039,0.0044,0.0032,0.0028,0.003,0.0019,0.0035],"nim":[0.0224,0.0215,0.0232,0.0221,0.0185,0.0237,0.0198,0.0214,0.0217,0.0162,0.0167,0.0232,0.0357],"cor":[0.0012,0.0023,0.0064,0.0067,0.0055,0.0048,0.0025,0.007,0.0075,0.0075,0.0053,0.0043,0.0046],"cov":[0.0031,0.0067,0.0105,0.0125,0.0161,0.0166,0.0161,0.0155,0.0161,0.0179,0.0201,0.0177,0.0158],"eff":[0.7937,0.7914,0.7457,0.7569,0.7485,0.665,0.693,0.669,0.7053,0.8081,0.799,0.663,0.5444]},{"id":"C0080109","name":"Safra","cat":"Core","tcb":"B1","a":[241.2788,244.5362,289.3228,287.1772,295.8413,310.4451,296.2951,258.1285,266.0758,265.4481,284.4767,286.5514,273.5604],"cr":[106.6222,114.6396,130.785,130.0285,129.9191,124.4627,125.4185,128.8441,134.172,132.7085,141.2542,137.5932,139.1769],"eq":[24.261,24.7271,27.1588,27.3175,27.8885,22.1764,21.4942,19.3146,19.7771,19.0897,17.4303,17.9549,18.6638],"ni":[2.3915,2.6925,3.2441,3.3363,3.2987,3.1206,3.3268,3.6431,4.1243,4.4912,4.3802,4.385,4.1134],"dep":[68.6718,69.0759,84.3595,80.4205,87.7408,84.5519,78.4089,66.139,58.5942,63.2467,81.2828,77.5148,71.5477],"roe":[0.1197,0.131,0.1426,0.1303,0.1265,0.1331,0.1368,0.1562,0.1731,0.2177,0.2251,0.2353,0.214],"roa":[0.0099,0.0109,0.0121,0.0125,0.0123,0.0112,0.0114,0.0134,0.0147,0.0156,0.0151,0.0161,0.0152],"nim":[0.0161,0.0168,0.0244,0.0259,0.0287,0.0293,0.0273,0.0274,0.0277,0.0263,0.0251,0.0268,0.0281],"cor":[0.0384,0.0363,0.0192,0.0174,0.0114,-0.001,0.0028,0.0024,0.0004,0.0173,0.0205,0.0233,0.0271],"cov":[0.0519,0.0492,0.0453,0.0468,0.0463,0.0475,0.047,0.0564,0.0554,0.061,0.0586,0.0583,0.0614],"eff":[1.0653,1.0166,0.7144,0.694,0.6368,0.6172,0.6472,0.6909,0.6787,0.6977,0.7365,0.7221,0.7004]},{"id":"C0080154","name":"Banrisul","cat":"Core","tcb":"B1","a":[116.0547,122.9656,124.4706,128.4798,136.303,140.9128,145.9421,151.5162,156.2796,158.7061,163.7261,163.8328,172.605],"cr":[54.8625,56.135,56.8868,57.3657,58.3901,61.3535,65.9781,60.8241,60.6262,60.5377,61.2146,60.2427,60.4281],"eq":[9.428,9.4847,9.6685,9.8018,10.0991,10.2571,10.4133,10.4128,10.6489,10.8776,11.1784,11.3268,11.5548],"ni":[0.7623,0.8175,0.8701,0.8445,0.8654,0.9354,0.9156,0.9695,1.0998,1.2314,1.6043,1.5844,1.5319],"dep":[67.8791,68.6083,71.178,71.9245,85.1169,85.0963,88.2537,88.5479,92.8072,95.6137,100.6519,101.165,105.6409],"roe":[0.0829,0.0884,0.0912,0.0876,0.0886,0.0948,0.0912,0.0959,0.106,0.1165,0.1486,0.1458,0.138],"roa":[0.0068,0.0069,0.0073,0.007,0.0069,0.0071,0.0068,0.0069,0.0075,0.0082,0.0104,0.01,0.0093],"nim":[0.0394,0.0385,0.0439,0.0457,0.0469,0.0469,0.0435,0.0363,0.0312,0.0278,0.0265,0.0259,0.0235],"cor":[0.0066,0.0094,0.0084,0.0089,0.0075,0.0048,0.0065,0.0129,0.0158,0.019,0.0282,0.031,0.0317],"cov":[0.0521,0.0519,0.0492,0.0518,0.0492,0.0462,0.0438,0.0517,0.0548,0.0571,0.0616,0.0665,0.066],"eff":[0.6812,0.6481,0.5926,0.5696,0.5442,0.5388,0.57,0.6622,0.7462,0.8297,0.8886,0.907,0.9708]},{"id":"C0084844","name":"C6 Bank","cat":"Core","tcb":"B1","a":[55.7003,60.1756,75.1362,76.6248,86.0517,98.562,116.1521,117.8487,126.7211,134.0698,148.151,152.7347,170.5711],"cr":[40.0541,44.1844,49.21,48.918,50.7583,56.0199,60.3598,67.251,74.2855,82.0066,90.6727,94.6041,99.2708],"eq":[3.2839,3.0139,2.7824,3.2433,3.7533,4.5915,4.7745,4.5076,4.9879,5.6279,6.1322,6.7401,6.9862],"ni":[-2.2936,-2.2582,-0.9082,-0.1167,0.5082,1.6071,2.2703,2.3721,2.3768,2.1837,2.4605,2.5158,2.6671],"dep":[34.9396,38.9163,43.4322,47.0995,53.425,57.0911,66.4298,70.5275,73.3364,74.9075,81.069,85.281,92.2743],"roe":[-0.5307,-0.5579,-0.286,-0.0358,0.1444,0.4226,0.6009,0.6121,0.5438,0.4274,0.4512,0.4474,0.4455],"roa":[-0.0499,-0.0452,-0.0153,-0.0019,0.0072,0.0202,0.0237,0.0244,0.0223,0.0188,0.0186,0.0186,0.0179],"nim":[0.0237,0.0295,0.0317,0.0462,0.0517,0.0516,0.0452,0.0373,0.0316,0.0256,0.0246,0.0234,0.023],"cor":[0.0588,0.0549,0.0491,0.0471,0.0442,0.0359,0.0317,0.0295,0.0252,0.0264,0.0279,0.0317,0.0389],"cov":[0.0593,0.0547,0.0487,0.049,0.047,0.041,0.0392,0.0589,0.0602,0.0584,0.0589,0.0616,0.0697],"eff":[1.391,1.1416,0.9382,0.6774,0.549,0.4917,0.4698,0.5262,0.5527,0.5975,0.5857,0.6125,0.6187]},{"id":"C0080484","name":"Votorantim","cat":"Core","tcb":"B1","a":[137.429,133.9696,141.9235,135.8624,134.1007,143.496,141.3952,141.6388,147.9542,150.6763,139.0522,150.546,154.3307],"cr":[78.6602,78.9881,78.9334,82.0471,81.0156,82.4608,82.3796,71.5749,72.6937,73.4919,76.5137,79.7341,79.9186],"eq":[13.6225,13.4067,14.0283,14.0386,14.2109,14.5663,14.4924,13.0056,13.3971,13.5704,12.6922,12.6942,12.9833],"ni":[1.3704,1.2485,1.5831,1.6023,1.6838,1.8833,1.7768,1.9131,2.0075,1.9747,1.8933,1.8977,1.912],"dep":[24.0352,26.2779,27.5863,31.4654,32.3707,36.8819,34.5686,25.5218,22.2281,24.3075,26.542,30.4238,27.5854],"roe":[0.0971,0.0895,0.1104,0.1141,0.121,0.1347,0.1246,0.1415,0.1454,0.1404,0.1393,0.1477,0.145],"roa":[0.0106,0.0095,0.0119,0.0119,0.0124,0.0136,0.0125,0.0138,0.0142,0.0134,0.0135,0.013,0.0126],"nim":[0.0308,0.0287,0.0309,0.0343,0.0362,0.0385,0.0406,0.0449,0.0516,0.0497,0.0454,0.0398,0.0354],"cor":[0.0391,0.0454,0.0481,0.0421,0.0419,0.0399,0.0354,0.0441,0.0412,0.0364,0.038,0.0391,0.0415],"cov":[0.0795,0.0817,0.0791,0.0739,0.0715,0.0725,0.0743,0.1182,0.125,0.1278,0.1278,0.1314,0.1315],"eff":[0.6791,0.7024,0.6403,0.5861,0.5722,0.5492,0.5385,0.5221,0.4657,0.4618,0.5102,0.5248,0.5491]},{"id":"C0084820","name":"Mercado Pago","cat":"Payments & fintech","tcb":"N1","a":[24.9682,29.38,35.427,38.7575,46.7949,51.7881,66.1252,70.0447,84.8798,96.7824,103.5218,112.3283,125.0426],"cr":[5.1623,5.7334,7.3169,9.3691,11.9346,13.6067,17.4865,15.6372,18.5598,22.8056,27.2305,30.3896,33.7042],"eq":[2.3143,2.705,2.4883,2.9185,3.008,3.1276,4.2342,4.4046,4.5794,4.8877,5.5409,5.8365,6.9906],"ni":[0.5961,0.9125,0.3187,0.5196,0.3537,0.0593,0.576,0.2832,0.4298,0.7556,0.587,0.5594,0.4883],"dep":[12.2611,13.8345,17.2003,18.3132,21.9194,23.4321,30.862,30.563,39.7555,46.7817,57.4977,59.616,68.6214],"roe":[0.3512,0.4651,0.1447,0.2114,0.1329,0.0203,0.1714,0.0774,0.1133,0.1885,0.1201,0.1092,0.0844],"roa":[0.0276,0.0369,0.0108,0.0166,0.0099,0.0015,0.0113,0.0052,0.0065,0.0102,0.0069,0.0061,0.0047],"nim":[-0.0236,-0.0142,0.0029,0.0104,0.0121,0.0145,0.0091,0.007,0.0107,0.0123,0.1234,0.119,0.1075],"cor":[0.0893,0.0257,0.0141,0.0386,0.0706,0.1175,0.1377,0.2553,0.2962,0.3119,0.2757,0.2968,0.3136],"cov":[0.6176,0.5784,0.5544,0.5187,0.4706,0.481,0.4826,0.4902,0.4914,0.477,0.4277,0.4633,0.4968],"eff":[0.1632,0.1572,0.1484,0.1444,0.1463,0.1592,0.1773,0.3161,0.5566,1.1693,0.5903,0.6,0.5895]},{"id":"C0084710","name":"Cielo","cat":"Payments & fintech","tcb":"N4","a":[96.0522,97.2806,108.284,103.0388,100.539,99.7009,113.1575,109.2905,109.8075,110.1517,119.0983,116.0357,115.1358],"cr":[5.3243,5.485,5.9724,4.6375,4.5473,4.9404,5.7948,0.0,0.0,0.0,0.0,0.0,0.0],"eq":[21.9179,22.2694,22.403,20.3077,20.3915,16.9987,17.2951,16.1079,13.3452,13.0741,15.1143,15.2336,15.3217],"ni":[2.2666,2.3095,2.4682,2.5213,2.1564,1.8582,1.7695,1.6556,1.5433,1.7158,2.2824,2.2025,2.1708],"dep":[0.016,0.0233,0.0366,0.047,0.0551,0.0706,0.0981,0.1178,0.1293,0.1392,0.1688,0.1892,0.2105],"roe":[0.1057,0.1063,0.1132,0.1206,0.1019,0.0946,0.0891,0.0909,0.0915,0.1141,0.1408,0.1406,0.1514],"roa":[0.0228,0.0232,0.0226,0.0248,0.0219,0.0189,0.016,0.0156,0.0147,0.0164,0.0197,0.0196,0.0193],"nim":[-0.0008,-0.0002,0.0005,0.0015,0.0026,0.0037,0.0042,0.0045,0.0044,0.0044,0.0762,0.0791,0.0785],"cor":[-0.0003,0.0,-0.0,-0.0,-0.0,-0.0,-0.0,null,null,null,null,null,null],"cov":[0.0138,0.0148,0.0144,0.0289,0.04,0.0362,0.005,null,null,null,null,null,null],"eff":[0.4049,0.3988,0.3899,0.4001,0.4076,0.4252,0.421,0.548,0.7956,1.4294,0.5901,0.5927,0.6066]},{"id":"C0081744","name":"Daycoval","cat":"Core","tcb":"B1","a":[74.4305,73.6663,79.3455,77.1696,82.6229,80.1051,93.7487,81.191,86.1308,90.7922,99.7414,96.6018,107.6664],"cr":[51.888,50.4952,55.7873,51.0607,53.6096,50.8524,63.5385,50.3166,54.6239,52.2574,60.5974,60.1094,63.3211],"eq":[6.0063,6.2246,6.1563,6.4237,6.7616,7.1089,7.0928,7.423,7.6669,7.9804,7.0753,7.3566,7.6557],"ni":[1.0937,1.1572,1.1019,1.2389,1.4491,1.5791,1.6893,1.7731,1.7509,1.7736,1.7966,1.7861,1.8305],"dep":[21.3234,20.5737,22.1035,23.5175,24.1497,21.8286,27.7508,22.1548,22.3019,24.2063,29.5614,27.3391,30.3922],"roe":[0.1936,0.1978,0.185,0.2014,0.227,0.2369,0.255,0.2561,0.2427,0.2351,0.2536,0.2417,0.2389],"roa":[0.0155,0.0163,0.0146,0.017,0.0185,0.0205,0.0195,0.0224,0.0208,0.0208,0.0186,0.0201,0.0189],"nim":[0.0209,0.0238,0.0238,0.0328,0.0424,0.0459,0.0495,0.0562,0.0442,0.0401,0.0275,0.0274,0.0269],"cor":[0.0173,0.0227,0.0211,0.0245,0.024,0.0243,0.0194,0.0187,0.021,0.0244,0.0221,0.0288,0.0268],"cov":[0.0415,0.0456,0.0449,0.0476,0.0478,0.0497,0.0495,0.0491,0.059,0.055,0.0494,0.0486,0.0475],"eff":[0.9614,0.8976,0.8666,0.6872,0.5235,0.4924,0.4213,0.4059,0.4659,0.5011,0.6083,0.6708,0.6576]},{"id":"C0080996","name":"Inter","cat":"Core","tcb":"B1","a":[49.805,54.7648,60.0525,61.5988,65.4924,68.5904,74.9009,79.094,82.7653,89.7638,96.4525,97.4758,101.3388],"cr":[25.8478,28.005,30.5257,32.1139,33.7605,34.1878,36.0472,33.9302,36.5447,39.7592,43.7127,44.9798,46.9085],"eq":[7.3156,7.264,7.4414,7.3528,7.3473,7.2982,7.339,7.2511,7.3129,7.3726,7.3983,7.458,7.4542],"ni":[-0.0036,0.0737,0.2203,0.3014,0.3587,0.4375,0.5666,0.7107,0.8625,1.0183,1.0642,1.1843,1.3189],"dep":[26.72,30.2018,34.0667,34.8238,38.2512,39.7027,44.296,44.5604,47.5845,52.2186,56.2971,55.6361,58.3224],"roe":[-0.0005,0.0094,0.0302,0.0416,0.0489,0.0601,0.0767,0.0973,0.1177,0.1388,0.1444,0.161,0.1786],"roa":[-0.0001,0.0015,0.0042,0.0055,0.0062,0.0071,0.0084,0.0101,0.0116,0.0129,0.0124,0.0134,0.0143],"nim":[0.0315,0.0282,0.0265,0.0265,0.0264,0.0282,0.0291,0.0328,0.0338,0.0333,0.0448,0.0437,0.0449],"cor":[0.0533,0.058,0.0567,0.0595,0.0598,0.0607,0.0582,0.0594,0.0547,0.0499,0.0486,0.0538,0.0582],"cov":[0.0748,0.0781,0.0811,0.0854,0.0858,0.0882,0.0861,0.0765,0.0743,0.0735,0.0748,0.0791,0.0806],"eff":[0.9465,0.9293,0.8783,0.8445,0.8134,0.7904,0.7865,0.8026,0.8597,0.9098,0.7438,0.7642,0.7524]},{"id":"C0081593","name":"Banco do Nordeste","cat":"Listed regional","tcb":"B1","a":[66.8393,64.8705,65.7639,66.8513,68.2486,70.6764,70.0633,71.0278,74.4633,71.2879,73.3915,75.7479,81.143],"cr":[18.0996,18.2459,17.798,17.166,18.0823,19.5915,21.8334,17.4977,18.1476,18.6946,18.9308,18.1452,17.7799],"eq":[9.8849,10.2904,10.7412,11.3354,11.5639,13.6763,14.0514,14.2186,14.9336,15.6253,16.1697,16.7028,16.9156],"ni":[2.2394,2.2665,2.1116,2.1133,2.2088,2.1555,2.3444,2.198,2.7464,2.9122,3.2002,3.3432,2.853],"dep":[15.5473,14.0052,15.0651,15.0142,16.3247,16.6441,17.1228,14.5168,15.8876,14.6646,14.5654,14.0005,15.1558],"roe":[0.2478,0.2401,0.214,0.2029,0.206,0.1799,0.1891,0.172,0.2073,0.1988,0.2118,0.2162,0.1792],"roa":[0.034,0.0352,0.0328,0.0318,0.0327,0.0318,0.0345,0.0319,0.0385,0.041,0.0446,0.0456,0.0367],"nim":[0.0554,0.057,0.0526,0.0512,0.0486,0.049,0.0517,0.0607,0.0738,0.089,0.0962,0.0956,0.089],"cor":[0.017,0.0314,0.0311,0.0308,0.0332,0.0226,0.02,0.0336,0.031,0.0311,0.0473,0.0516,0.0591],"cov":[0.0492,0.0561,0.0554,0.0434,0.0452,0.0405,0.0343,0.04,0.0431,0.0458,0.0564,0.0686,0.0777],"eff":[0.6903,0.6941,0.7065,0.7079,0.7253,0.726,0.7147,0.6711,0.6034,0.5541,0.5332,0.5299,0.5427]},{"id":"C0084813","name":"PagSeguro","cat":"Payments & fintech","tcb":"B1","a":[43.2182,47.8765,55.6625,59.8372,66.938,67.9249,73.5726,69.8241,71.9388,73.0492,75.6143,76.1005,77.0744],"cr":[3.4139,3.3321,3.9391,4.0721,4.6821,5.2187,5.5963,3.2462,3.3529,3.5154,3.8293,4.0843,4.6181],"eq":[11.2763,10.9503,10.5738,10.9811,11.3396,11.6664,11.5928,11.5359,11.4691,11.5228,7.8168,7.9954,8.6148],"ni":[1.474,1.8414,1.4775,1.5143,1.5225,1.6028,1.7788,1.8861,2.0208,2.0917,1.9406,1.9444,1.9228],"dep":[17.5264,21.5566,28.2363,30.057,34.1611,33.3255,34.8869,32.6101,34.6948,36.3684,37.7956,39.1774,39.7806],"roe":[0.1386,0.1723,0.1611,0.1373,0.1346,0.1417,0.1605,0.1675,0.1772,0.1804,0.2,0.1991,0.1915],"roa":[0.0356,0.0401,0.0301,0.0293,0.0276,0.0277,0.0275,0.0291,0.0291,0.0297,0.026,0.0267,0.0258],"nim":[0.1183,0.1093,0.0315,-0.0035,-0.037,-0.0703,-0.0363,-0.0412,-0.0438,-0.0512,0.1103,0.1109,0.1075],"cor":[0.0039,0.01,0.0088,0.0098,0.0137,0.0079,0.0068,0.0159,0.0154,0.0248,0.0349,0.0428,0.049],"cov":[0.0138,0.0303,0.0282,0.0261,0.0278,0.0148,0.0143,0.0158,0.018,0.0194,0.0234,0.0269,0.0196],"eff":[0.2133,0.2186,0.2862,0.3439,0.4685,0.6867,0.591,1.0011,2.8525,null,0.5018,0.5066,0.5134]},{"id":"C0080312","name":"ABC Brasil","cat":"Core","tcb":"B1","a":[53.644,55.5782,59.5007,60.2514,67.6031,70.2451,71.6814,64.2358,64.4383,63.2387,66.3164,69.2832,69.5849],"cr":[26.3486,28.3757,30.8123,29.8172,32.5453,32.1577,32.1514,20.1534,20.166,20.6958,22.7701,20.9801,21.5681],"eq":[5.4227,5.7233,5.8854,6.1471,6.2533,6.3961,6.4111,6.4876,6.6041,6.723,6.7761,7.165,7.2787],"ni":[0.8102,0.8204,0.8651,0.901,0.9555,0.9854,0.9919,0.994,0.9863,0.9893,1.0196,1.0239,1.0346],"dep":[8.0621,8.4425,10.4725,10.3335,11.5638,11.3191,11.3339,9.4093,8.769,8.1771,9.3524,8.2777,7.9971],"roe":[0.1568,0.152,0.156,0.1574,0.1637,0.1626,0.1613,0.1573,0.1534,0.1508,0.1546,0.15,0.149],"roa":[0.0157,0.0154,0.015,0.0159,0.0158,0.0157,0.0151,0.016,0.0149,0.0148,0.0148,0.0153,0.0154],"nim":[0.0149,0.0168,0.0158,0.0185,0.0204,0.0217,0.021,0.0136,0.0063,0.0034,0.006,0.0144,0.0234],"cor":[0.0125,0.012,0.0099,0.0078,0.0057,0.006,0.0052,0.009,0.0116,0.0118,0.0133,0.0126,0.0114],"cov":[0.0203,0.021,0.0216,0.0238,0.0212,0.0194,0.0173,0.0196,0.0199,0.0215,0.0177,0.0151,0.0157],"eff":[0.6107,0.5798,0.5966,0.5514,0.4966,0.478,0.4759,0.6889,1.1053,1.5358,1.269,0.7156,0.5059]},{"id":"C0081249","name":"Banco da Amazônia","cat":"Listed regional","tcb":"B1","a":[40.7602,42.7225,45.2123,48.1948,51.0491,52.5673,54.3159,56.7243,59.112,60.3982,63.3239,64.6444,67.3529],"cr":[21.7909,23.9761,26.5022,27.53,28.5447,30.7051,32.8278,31.8632,33.0968,35.936,38.5919,39.7034,38.7138],"eq":[5.4626,5.8116,5.8833,6.114,6.4614,6.8047,6.5311,6.6913,7.028,7.283,7.1614,7.1828,7.2741],"ni":[1.2491,1.1947,1.3452,1.2652,1.3184,1.3042,1.132,1.2327,1.168,1.0734,1.1054,0.8455,0.8833],"dep":[10.3842,10.5986,11.3228,12.0686,13.2999,12.7217,12.8738,13.0874,13.4805,12.9638,13.2036,12.685,13.3701],"roe":[0.2515,0.2235,0.2509,0.2245,0.2211,0.2068,0.1824,0.1925,0.1732,0.1524,0.1615,0.1219,0.1235],"roa":[0.034,0.0312,0.0337,0.0293,0.0287,0.0274,0.0227,0.0235,0.0212,0.019,0.0188,0.0139,0.014],"nim":[0.0289,0.0266,0.0268,0.0196,0.017,0.014,0.0096,0.0223,0.0355,0.0478,0.0562,0.0505,0.0466],"cor":[0.0227,0.0248,0.0193,0.0248,0.0275,0.0296,0.0359,0.0366,0.0358,0.0361,0.0384,0.0485,0.0583],"cov":[0.035,0.0351,0.029,0.0338,0.0364,0.0362,0.0392,0.0581,0.0614,0.0658,0.0693,0.0804,0.0918],"eff":[0.4854,0.5166,0.5813,0.6855,0.7109,0.8278,0.9775,0.6605,0.4909,0.4174,0.4163,0.466,0.5085]},{"id":"C0084686","name":"Stone","cat":"Payments & fintech","tcb":"N1","a":[29.0221,33.0478,38.5265,41.4803,43.2775,42.4297,48.3735,47.4129,48.9789,51.8465,55.418,52.385,54.0944],"cr":[1.0711,1.0267,1.0881,1.1813,1.8304,2.3158,2.7305,1.2855,1.58,1.9995,2.4553,2.7219,3.1091],"eq":[6.4909,7.8986,8.3354,11.4081,12.1283,8.3307,9.7125,10.2664,11.1045,11.7337,9.9806,10.3063,10.9415],"ni":[0.356,0.382,0.3727,0.3578,0.2389,0.3631,0.3955,0.5447,0.6478,0.5237,1.9894,3.9376,4.4094],"dep":[3.1112,3.5743,5.3278,5.4902,6.4116,8.3808,11.4321,10.8373,11.61,12.3095,14.2751,11.0916,12.3018],"roe":[0.0518,0.0536,0.051,0.0405,0.0257,0.0447,0.0438,0.0503,0.0558,0.0522,0.202,0.3828,0.4],"roa":[0.0125,0.0127,0.0108,0.0102,0.0066,0.0096,0.0091,0.0123,0.014,0.0111,0.0383,0.0789,0.0856],"nim":[-0.0777,-0.0767,-0.0746,-0.0741,-0.0714,-0.0663,-0.0629,-0.0663,-0.0688,-0.0737,0.1598,0.1709,0.1618],"cor":[-0.8319,-0.9997,-0.7795,-0.5349,0.0058,0.0449,0.0162,0.0527,0.0927,0.0969,0.0996,0.1194,0.1311],"cov":[0.9536,null,0.0048,0.0459,0.0524,0.0627,0.0743,0.1219,0.1347,0.1364,0.1414,0.1645,0.1811],"eff":[2.4795,2.3115,3.0054,3.145,3.4355,3.3761,3.9106,57.5685,null,null,0.6501,0.6375,0.6425]},{"id":"C0088022","name":"PicPay","cat":"Payments & fintech","tcb":"B1","a":[null,null,null,null,null,null,27.6198,29.5605,34.0097,37.6639,41.7119,46.3547,51.5979],"cr":[null,null,null,null,null,null,11.9952,11.4594,13.9603,16.0462,20.4152,23.562,26.9069],"eq":[null,null,null,null,null,null,2.675,2.8622,3.129,3.584,4.329,5.8431,7.2899],"ni":[null,null,null,null,null,null,null,null,null,null,0.9886,1.0307,1.2204],"dep":[null,null,null,null,null,null,20.016,21.0289,23.9039,26.8513,28.9949,31.073,34.3277],"roe":[null,null,null,null,null,null,null,null,null,null,0.2823,0.2368,0.2343],"roa":[null,null,null,null,null,null,null,null,null,null,0.0285,0.0272,0.0285],"nim":[null,null,null,null,null,null,null,null,null,null,0.0823,0.0774,0.0742],"cor":[null,null,null,null,null,null,null,null,null,null,0.1438,0.1461,0.1447],"cov":[null,null,null,null,null,null,0.0687,0.1476,0.1656,0.1754,0.191,0.1976,0.1989],"eff":[null,null,null,null,null,null,null,null,null,null,0.8594,0.9246,0.8349]},{"id":"C0083694","name":"Agibank","cat":"Core","tcb":"B1","a":[15.8087,17.2751,19.4266,21.8838,24.1241,26.182,30.0247,33.5946,39.3711,45.6798,48.657,50.2106,50.3634],"cr":[12.3814,14.1842,15.6352,17.6326,18.9162,21.8358,23.6763,25.1904,28.3951,32.1561,32.2496,33.1976,34.6756],"eq":[1.2203,1.3252,1.4885,1.6996,1.9316,2.0937,2.7198,2.6731,2.8979,5.0719,5.2773,5.4193,7.9604],"ni":[0.2042,0.3139,0.4296,0.5859,0.7223,0.7903,0.8685,1.0022,1.0775,1.0948,1.092,0.8853,0.611],"dep":[10.7825,12.3216,13.5369,15.2968,15.9956,16.5695,17.5324,20.6545,21.7537,20.7254,22.6267,23.4444,19.9072],"roe":[0.1737,0.2574,0.327,0.407,0.4584,0.4623,0.4128,0.4584,0.4462,0.3056,0.2731,0.2188,0.1125],"roa":[0.0154,0.0216,0.0268,0.0326,0.0362,0.0364,0.0351,0.0361,0.0339,0.0305,0.0278,0.0211,0.0136],"nim":[0.1331,0.1333,0.136,0.1367,0.1332,0.1317,0.1239,0.1117,0.0999,0.0902,0.0805,0.0753,0.068],"cor":[0.0585,0.0541,0.0525,0.0498,0.0506,0.0466,0.0444,0.0487,0.0478,0.0492,0.0584,0.0603,0.0636],"cov":[0.0545,0.0526,0.0533,0.0484,0.0474,0.0442,0.0418,0.0657,0.0646,0.0609,0.069,0.0594,0.0599],"eff":[0.8513,0.8216,0.7963,0.7635,0.7687,0.7913,0.8123,0.8228,0.8066,0.7653,0.7279,0.7259,0.7698]},{"id":"C0080178","name":"BMG","cat":"Core","tcb":"B1","a":[43.5906,42.993,43.4473,45.5578,45.6311,45.0886,48.5439,49.4965,47.6207,47.6148,47.8999,49.5119,49.0011],"cr":[28.5695,28.1695,28.6741,29.4965,28.8021,29.6891,31.0319,24.6205,22.7971,21.8397,21.7356,22.6597,22.6195],"eq":[4.0903,3.8963,3.9253,3.986,4.1205,4.2578,4.3057,3.6485,3.7312,3.8462,3.9162,4.2409,4.3191],"ni":[0.1635,0.1432,0.1896,0.2644,0.3972,0.4449,0.42,0.4405,0.4589,0.4878,0.5607,0.5929,0.6251],"dep":[25.7972,26.4732,26.9483,29.463,29.7987,27.0393,25.3748,25.8269,25.8927,23.6741,22.7477,23.1718,24.1994],"roe":[0.0401,0.0358,0.0466,0.0649,0.0968,0.1091,0.102,0.1154,0.1169,0.1204,0.1364,0.1503,0.1553],"roa":[0.0039,0.0033,0.0044,0.006,0.0089,0.0101,0.0091,0.0093,0.0098,0.0105,0.0116,0.012,0.0129],"nim":[0.0713,0.0724,0.0752,0.0767,0.093,0.0979,0.1067,0.103,0.0884,0.085,0.0695,0.069,0.0752],"cor":[0.0557,0.0605,0.0473,0.0436,0.0391,0.0352,0.0386,0.0536,0.0515,0.0455,0.0472,0.0419,0.0558],"cov":[0.0554,0.0603,0.0391,0.0481,0.0507,0.0485,0.0415,0.0838,0.0812,0.0779,0.0703,0.067,0.0691],"eff":[0.7076,0.6849,0.6717,0.6609,0.5538,0.5542,0.4967,0.5082,0.6056,0.6359,0.7597,0.7543,0.7027]},{"id":"C0080123","name":"Mercantil do Brasil","cat":"Core","tcb":"B1","a":[17.2954,17.9144,19.5651,20.8242,22.2643,24.2379,26.0636,27.7975,30.5675,32.3877,37.5274,40.2268,42.6623],"cr":[13.2881,13.8948,14.6213,15.5118,16.0392,17.0548,17.7677,17.8481,18.1965,20.5058,22.6686,23.9828,23.6588],"eq":[1.4248,1.4979,1.5943,1.7146,1.8362,1.9805,2.1258,1.9326,2.1064,2.2875,2.3284,3.0193,3.1341],"ni":[0.2739,0.3367,0.4219,0.5194,0.6003,0.7002,0.7545,0.8299,0.8918,0.9445,0.7556,0.7881,0.8202],"dep":[12.8258,13.5678,14.1987,14.992,16.3046,17.4618,18.1686,19.4636,20.8607,21.5093,21.3822,21.2763,21.7686],"roe":[0.2049,0.243,0.2896,0.3381,0.3682,0.4026,0.4057,0.4551,0.4524,0.4426,0.3393,0.3183,0.313],"roa":[0.0172,0.0208,0.0244,0.0285,0.0303,0.0332,0.0331,0.0341,0.0338,0.0334,0.0238,0.0232,0.0224],"nim":[0.144,0.152,0.1519,0.1596,0.1599,0.1642,0.1651,0.159,0.1472,0.1401,0.1284,0.1212,0.1126],"cor":[0.0264,0.0291,0.0295,0.0279,0.0306,0.0272,0.026,0.0249,0.0241,0.0198,0.0209,0.0293,0.0378],"cov":[0.0344,0.0355,0.0346,0.031,0.0273,0.0266,0.0222,0.0587,0.055,0.0474,0.043,0.047,0.0522],"eff":[0.5235,0.4951,0.4889,0.4592,0.4384,0.4297,0.4258,0.4436,0.4651,0.4835,0.5131,0.5311,0.5565]},{"id":"C0080147","name":"Banestes","cat":"Listed regional","tcb":"B1","a":[38.6348,41.6233,41.4762,42.6915,38.4367,37.5158,36.971,38.1907,38.9863,39.2249,39.7986,40.0703,42.5819],"cr":[9.1338,9.48,9.8245,10.3089,10.9013,11.3967,12.0648,11.5485,11.9384,12.0302,12.2154,12.3463,12.46],"eq":[2.0933,2.1787,2.2164,2.272,2.2509,2.3229,2.3572,2.272,2.3526,2.4424,2.4117,2.4399,2.5047],"ni":[0.3332,0.3523,0.3706,0.3683,0.3538,0.3491,0.3925,0.3787,0.4178,0.4375,0.4134,0.4496,0.4457],"dep":[22.8257,22.8462,22.7049,23.2101,24.1941,23.4201,22.9819,22.9249,23.919,23.762,24.4451,25.0406,26.8058],"roe":[0.1652,0.1683,0.1743,0.1696,0.1629,0.1551,0.1716,0.1667,0.1815,0.1836,0.1734,0.1908,0.1835],"roa":[0.0088,0.0088,0.0095,0.0092,0.0092,0.0088,0.01,0.0094,0.0108,0.0114,0.0108,0.0115,0.0109],"nim":[0.0277,0.0275,0.0302,0.0303,0.031,0.03,0.0305,0.0296,0.0318,0.0323,0.0342,0.0336,0.0324],"cor":[0.0227,0.0232,0.0208,0.019,0.0193,0.0187,0.0195,0.0201,0.0159,0.0157,0.0153,0.0184,0.0207],"cov":[0.043,0.0407,0.0354,0.0351,0.0347,0.0349,0.0328,0.0486,0.0451,0.0439,0.0411,0.0408,0.0395],"eff":[0.5422,0.5384,0.5297,0.5425,0.5621,0.5766,0.5778,0.5939,0.592,0.6033,0.5952,0.5969,0.6078]},{"id":"C0080903","name":"Original","cat":"Core","tcb":"B1","a":[36.3111,35.9994,37.9476,39.0551,45.7066,49.9443,28.2778,29.9449,31.8257,34.7809,32.1417,34.3286,39.404],"cr":[17.6417,18.5485,20.7628,23.6218,27.2932,30.3417,18.9611,13.5185,14.2463,14.9129,18.1379,17.2269,20.2764],"eq":[3.1851,2.9143,2.4953,2.7411,2.9182,3.1568,1.7308,1.1934,1.3552,1.4705,1.8034,2.2734,2.3241],"ni":[-1.945,-1.7621,-1.4682,-0.4406,-0.4224,-0.0362,0.1285,-0.0685,-0.154,-0.2802,0.0228,0.1229,0.167],"dep":[24.2915,24.1103,25.4375,26.4104,30.4999,33.8109,16.4302,18.3824,19.7548,21.9265,17.0938,17.3361,21.5412],"roe":[-0.6603,-0.5959,-0.5568,-0.16,-0.1384,-0.0119,0.0608,-0.0348,-0.0721,-0.1211,0.0129,0.0709,0.0908],"roa":[-0.0553,-0.0501,-0.0394,-0.0119,-0.0103,-0.0008,0.0039,-0.002,-0.004,-0.0066,0.0008,0.0038,0.0047],"nim":[-0.0149,-0.0082,0.011,0.0461,0.0407,0.0528,0.0358,0.0113,-0.0007,-0.0155,0.0205,0.018,0.0164],"cor":[0.2492,0.2081,0.1534,0.0883,0.0552,0.0379,0.0197,0.0195,0.0044,-0.0131,-0.0141,-0.0169,-0.0147],"cov":[0.3279,0.267,0.2253,0.1773,0.1399,0.1219,0.1332,0.2492,0.2228,0.1813,0.1227,0.0735,0.0992],"eff":[3.8831,3.1759,2.0253,1.0711,1.0054,0.7757,0.9582,1.7211,266.9205,null,0.8699,0.8841,0.8672]},{"id":"C0080374","name":"Pine","cat":"Core","tcb":"B1","a":[17.9689,19.7718,21.6886,24.4481,25.143,25.5625,27.8531,28.2046,30.2286,30.7544,32.5214,35.7673,37.6302],"cr":[8.1478,8.7581,9.2081,11.1241,11.2476,11.7618,11.6178,10.6901,11.3063,12.3716,12.3255,14.2367,19.5193],"eq":[0.9384,0.9645,0.9845,1.0835,1.1223,1.1726,1.2313,1.0917,1.1691,1.2562,1.4356,1.7592,1.8321],"ni":[0.108,0.1411,0.1809,0.2133,0.2343,0.2536,0.2585,0.269,0.2882,0.3276,0.4447,0.522,0.6027],"dep":[8.7215,9.6438,9.5998,11.3878,13.612,14.2883,15.0882,14.7462,15.5685,15.1069,15.5263,17.4589,18.0511],"roe":[0.1212,0.1548,0.1952,0.2155,0.2274,0.2374,0.2334,0.2474,0.2515,0.2698,0.3335,0.3662,0.4016],"roa":[0.0066,0.0081,0.0095,0.01,0.0109,0.0112,0.0104,0.0102,0.0104,0.0116,0.0147,0.0163,0.0178],"nim":[0.0245,0.0306,0.0374,0.0383,0.036,0.0349,0.031,0.0258,0.0248,0.0292,0.0352,0.0459,0.0527],"cor":[0.003,0.0062,-0.0018,-0.0057,-0.0021,-0.0012,0.0024,0.0078,0.0108,0.0198,0.0279,0.03,0.0283],"cov":[0.0457,0.0483,0.0265,0.0205,0.0221,0.0208,0.0227,0.0364,0.0415,0.0449,0.0548,0.0495,0.0535],"eff":[0.5397,0.4468,0.3821,0.3464,0.3524,0.3587,0.3826,0.4628,0.4937,0.4953,0.4573,0.4085,0.3817]},{"id":"C0080642","name":"Porto Seguro","cat":"Payments & fintech","tcb":"N1","a":[16.3569,17.1992,18.3832,18.1263,18.9153,19.3249,21.022,21.7174,22.6138,24.1197,26.3303,27.3329,29.0053],"cr":[15.0737,15.571,16.4453,16.3983,16.7184,17.2391,18.6683,17.7916,18.3378,18.8467,20.3027,20.218,20.5566],"eq":[1.4154,1.4362,1.5315,1.4374,1.4684,1.4852,1.6615,1.5476,1.554,1.5961,1.8473,2.2032,2.2766],"ni":[0.2055,0.2406,0.2699,0.3776,0.4551,0.5243,0.5193,0.5393,0.5312,0.4779,0.4328,0.377,0.345],"dep":[0.3523,0.2928,0.315,0.1299,0.1673,0.2009,0.2282,1.4556,0.9655,0.6704,0.9339,1.2673,1.5057],"roe":[0.1468,0.1686,0.1793,0.2638,0.3157,0.3589,0.3253,0.3613,0.3515,0.3102,0.2467,0.201,0.1801],"roa":[0.0133,0.015,0.0158,0.0223,0.0258,0.0287,0.0264,0.0271,0.0256,0.022,0.0183,0.0154,0.0134],"nim":[0.0198,0.0236,0.0256,0.0318,0.0384,0.043,0.0403,0.041,0.0394,0.0318,0.0764,0.0687,0.0584],"cor":[0.1124,0.1129,0.1104,0.112,0.1111,0.1057,0.0907,0.0985,0.0986,0.105,0.1129,0.0765,0.0799],"cov":[0.2408,0.2525,0.2498,0.2496,0.2552,0.2522,0.2351,0.3055,0.3336,0.3453,0.3599,0.307,0.3174],"eff":[0.5088,0.4667,0.4478,0.4121,0.4025,0.4031,0.4182,0.4908,0.5793,0.7271,0.5213,0.5175,0.4838]},{"id":"C0086581","name":"CloudWalk","cat":"Payments & fintech","tcb":"N1","a":[8.3138,8.9864,9.524,9.9181,11.3271,12.4389,14.6799,16.8709,20.0527,26.7331,17.1733,20.8426,24.2491],"cr":[0.2198,0.2579,0.2962,0.3557,0.2785,0.4183,0.4205,0.0,0.0224,0.3573,0.5466,0.5209,0.9397],"eq":[3.8828,3.896,3.9398,3.8503,5.012,4.795,7.489,7.3532,10.6436,14.5496,14.0594,17.547,19.6977],"ni":[null,null,0.5701,0.5723,0.6044,0.6877,0.8012,0.7666,1.2446,1.2121,1.1985,1.3504,0.9745],"dep":[0.0,0.0,0.0,0.3209,0.455,0.6352,1.2163,1.1568,1.3352,1.5643,2.1752,2.0821,2.9766],"roe":[null,null,0.1472,0.1487,0.1359,0.1582,0.1402,0.1369,0.159,0.1253,0.1112,0.1085,0.0642],"roa":[null,null,0.0638,0.063,0.0615,0.0642,0.0662,0.0572,0.0793,0.0619,0.0753,0.0716,0.044],"nim":[null,null,0.0105,0.0128,0.0084,0.0094,0.0091,0.0105,0.0108,0.0121,0.1641,0.1649,0.17],"cor":[null,null,-0.1933,-0.1929,-0.0937,-0.0712,-0.0482,null,-0.2005,0.0602,0.1919,0.4326,0.2952],"cov":[null,null,null,null,null,null,null,null,0.0454,0.0472,0.2038,0.3341,0.2579],"eff":[null,null,0.8115,0.9471,1.2426,1.3126,1.2676,1.5439,1.8453,2.1661,0.3728,0.3531,0.3335]},{"id":"C0080271","name":"Sofisa","cat":"Core","tcb":"B1","a":[13.3216,14.129,15.4198,15.8053,16.1903,16.8006,17.3266,23.6407,17.5526,17.7494,18.1166,17.8562,18.1217],"cr":[8.1418,8.1121,8.8862,8.5857,8.6856,8.6408,8.9876,7.5741,8.093,7.3072,8.0289,7.7554,8.4073],"eq":[1.0489,1.0674,1.0859,1.0951,1.1034,1.1292,1.1227,1.164,1.1446,1.1332,1.1305,1.1491,1.1578],"ni":[0.1406,0.1304,0.1311,0.1225,0.1354,0.1363,0.1404,0.1657,0.1427,0.1172,0.1168,0.1026,0.0862],"dep":[7.9831,8.7255,9.7166,10.1307,10.7543,11.2938,11.9572,12.6922,12.6085,12.7171,13.5044,13.5708,14.1622],"roe":[0.1428,0.1289,0.1245,0.1147,0.1258,0.1241,0.1271,0.1467,0.127,0.1036,0.1036,0.0887,0.0749],"roa":[0.0113,0.0101,0.0094,0.0087,0.0092,0.0088,0.0086,0.0084,0.0085,0.0068,0.0066,0.0049,0.0048],"nim":[0.0536,0.0505,0.0448,0.0415,0.0392,0.0412,0.0387,0.0334,0.0347,0.0288,0.0257,0.0209,0.028],"cor":[0.0169,0.0215,0.0283,0.0327,0.0342,0.0337,0.0272,0.0284,0.0292,0.0371,0.0342,0.0393,0.0344],"cov":[0.0275,0.0305,0.0334,0.0357,0.0303,0.0348,0.0371,0.0558,0.0616,0.0795,0.0588,0.0737,0.0722],"eff":[0.5265,0.5634,0.5972,0.6597,0.6869,0.6501,0.6843,0.6575,0.7242,0.8312,0.9082,0.9707,0.8939]},{"id":"C0085702","name":"Neon","cat":"Payments & fintech","tcb":"N1","a":[5.8544,7.4058,8.6224,8.7249,8.7032,9.1838,9.9157,10.1743,null,11.0367,11.1937,11.2118,12.2659],"cr":[3.2778,3.9877,4.7197,4.9417,4.9135,5.1215,5.4272,5.0007,null,5.5767,5.9387,6.1582,6.5315],"eq":[2.0008,1.8052,1.8883,1.6252,1.1173,1.1977,1.2172,1.3375,null,1.3261,1.3174,1.3812,1.3816],"ni":[-0.7522,-0.6718,-0.6725,-0.5685,-0.558,-0.491,-0.357,-0.2242,null,null,null,null,0.0343],"dep":[1.405,2.4293,3.2057,3.8674,4.549,4.838,5.5889,5.7275,null,6.4675,6.5992,6.2985,6.5525],"roe":[-0.4076,-0.3986,-0.3382,-0.3074,-0.3579,-0.327,-0.2299,-0.1513,null,null,null,null,null],"roa":[-0.1591,-0.1209,-0.102,-0.0832,-0.0767,-0.0592,-0.0385,-0.0237,null,null,null,null,null],"nim":[-0.0078,-0.0085,0.001,0.0089,-0.0661,-0.0746,-0.0127,-0.0046,null,null,null,null,null],"cor":[0.1444,0.1339,0.1289,0.1414,0.1696,0.213,0.1289,0.17,null,null,null,null,0.0609],"cov":[0.1997,0.2242,0.3541,0.3962,0.4056,0.4044,0.3857,0.3628,null,0.3983,0.3665,0.366,0.3538],"eff":[3.736,3.3222,2.2469,1.8213,null,null,2.6897,2.6682,null,null,null,null,0.4212]},{"id":"C0080288","name":"BRB","cat":"Federal & unlisted","tcb":"B1","a":[46.1784,48.0215,49.8227,50.1826,53.6678,56.7596,61.7233,70.4456,76.1457,83.6284,null,null,null],"cr":[35.9555,37.0222,38.2462,38.568,38.7168,41.6469,48.6355,54.3255,58.5907,57.2251,null,null,null],"eq":[2.4088,2.4701,2.6101,2.5659,2.4922,2.8714,3.6874,4.0788,4.2084,5.001,null,null,null],"ni":[null,null,0.2094,0.2054,0.1705,0.1802,0.1957,0.491,0.7208,0.8194,null,null,null],"dep":[30.4602,31.0047,31.5647,32.5832,34.9138,35.5668,39.0411,42.7625,48.0024,53.0039,null,null,null],"roe":[null,null,0.0809,0.0808,0.0696,0.0675,0.0622,0.1478,0.2152,0.2082,null,null,null],"roa":[null,null,0.0046,0.0044,0.0034,0.0034,0.0035,0.0081,0.0111,0.0117,null,null,null],"nim":[null,null,0.0551,0.0571,0.0548,0.0562,0.0535,0.0577,0.0574,0.0596,null,null,null],"cor":[null,null,0.0191,0.0242,0.029,0.0153,0.0093,0.0048,0.004,0.0196,null,null,null],"cov":[0.022,0.0225,0.0255,0.0321,0.0372,0.0211,0.0171,0.0164,0.0187,0.0326,null,null,null],"eff":[null,null,0.7436,0.7293,0.7224,0.6882,0.6777,0.6046,0.5908,0.5602,null,null,null]}],"npl":{"PF":[0.028002,0.026875,0.025175,0.025309,0.025879,0.025953,null,0.02979,0.03308,0.036433,0.038963,0.04055,0.042134],"PJ":[0.018645,0.01957,0.01523,0.015688,0.016545,0.01237,null,0.015334,0.01608,0.016853,0.017189,0.018688,0.01886]},"modalities":[{"name":"Otros (personas)","v":0.113287,"p":0.113965},{"name":"Tarjeta de crédito","v":0.112572,"p":0.10754},{"name":"Rural y agroindustrial","v":0.068355,"p":0.057226},{"name":"Personal sin consignación","v":0.060113,"p":0.064192},{"name":"Vehículos","v":0.031594,"p":0.029373},{"name":"Consignado","v":0.013835,"p":0.011844}],"bridge":[{"bank":"Itaú Unibanco","line":"Total assets","gaap":3226.84,"ifd":2846.42,"note":"Insurance bridge of +382.0 explains the residual."},{"bank":"Itaú Unibanco","line":"Total credit","gaap":1234.79,"ifd":1235.23,"note":"Credit-granting operations, as defined in IF.Data."},{"bank":"Itaú Unibanco","line":"Repos","gaap":482.86,"ifd":483.07,"note":"Securities sold under repurchase agreements."},{"bank":"Itaú Unibanco","line":"Deposits","gaap":1134.49,"ifd":1144.41,"note":"Interbank deposits included in IF.Data."},{"bank":"Itaú Unibanco","line":"Net income 1H","gaap":24.12,"ifd":24.67,"note":"Six-month cumulative, January–June."},{"bank":"Bradesco","line":"Total assets","gaap":1974.64,"ifd":2015.22,"note":"Individual statements p.14; IFRS consolidated is −18.4% on insurance."},{"bank":"Bradesco","line":"Deposits (customer)","gaap":720.09,"ifd":784.6,"note":"Subsidiaries carried at equity in the individual statements."},{"bank":"Bradesco","line":"Net income 1H","gaap":12.08,"ifd":12.11,"note":"Individual p.16; IFRS consolidated 12.48."},{"bank":"Banco do Brasil","line":"Total assets","gaap":2584.77,"ifd":2583.59,"note":"Exact match."},{"bank":"Banco do Brasil","line":"Repos","gaap":685.5,"ifd":696.94,"note":"No bridge disclosed in the source audit; gap 1.7%."},{"bank":"Banco do Brasil","line":"Net income 1H","gaap":6.26,"ifd":6.55,"note":"No bridge disclosed in the source audit; gap 4.6%."},{"bank":"Banco do Brasil","line":"Total credit","gaap":1142.19,"ifd":1128.4,"note":"Net of provisions p.64; gross 1,245.9; Dec-25 net 1,131.2."},{"bank":"Banco do Brasil","line":"Deposits","gaap":1025.08,"ifd":1025.16,"note":"Note 17a 954.0 + interbank 71.1."},{"bank":"Santander Brasil","line":"Total assets","gaap":1285.99,"ifd":1314.93,"note":"Subsidiaries carried at equity."},{"bank":"Santander Brasil","line":"Credit (note 8a)","gaap":563.94,"ifd":551.59,"note":"Note 8a total, not the balance-sheet line."},{"bank":"Santander Brasil","line":"Repos","gaap":166.81,"ifd":166.84,"note":"Money-market funding."},{"bank":"Santander Brasil","line":"Deposits","gaap":504.49,"ifd":505.05,"note":"Interbank 7.98 included."},{"bank":"BTG Pactual","line":"Repos","gaap":232.53,"ifd":233.22,"note":"Open-market funding."},{"bank":"Caixa","line":"Total assets","gaap":2388.98,"ifd":2386.0,"note":"Consolidated p.4; the parent figure is not comparable."},{"bank":"Caixa","line":"Total credit","gaap":1379.22,"ifd":1379.2,"note":"Net of provisions p.4."},{"bank":"Caixa","line":"Repos","gaap":225.77,"ifd":225.77,"note":"Exact in June and December."},{"bank":"ABC Brasil","line":"Deposits","gaap":8.0,"ifd":8.0,"note":"Exact match."},{"bank":"Banestes","line":"Total credit","gaap":12.46,"ifd":12.46,"note":"Credit operations + other receivables (p.14)."},{"bank":"BMG","line":"Total credit","gaap":22.65,"ifd":22.62,"note":"Note total + other receivables (p.42), gross."},{"bank":"BNDES","line":"Total assets","gaap":1058.27,"ifd":1057.96,"note":"Individual p.3; consolidated 1,073.7."},{"bank":"BNDES","line":"Total credit","gaap":416.33,"ifd":416.33,"note":"Loans 357.0 + other 59.3 (p.3)."}],"mods":[{"name":"Other consumer","s":[0.088941,0.082151,0.077343,0.077271,0.075468,0.0751,null,0.091777,0.094744,0.100105,0.105901,0.113965,0.113287]},{"name":"Credit cards","s":[0.107673,0.104269,0.092768,0.093907,0.093506,0.090262,null,0.09104,0.097665,0.103541,0.102322,0.10754,0.112572]},{"name":"Rural & agribusiness","s":[0.008131,0.010547,0.011676,0.013712,0.019979,0.024274,null,0.029703,0.042152,0.057683,0.060157,0.057226,0.068355]},{"name":"Unsecured personal","s":[0.04074,0.037241,0.034065,0.0344,0.035761,0.035247,null,0.048038,0.053776,0.055367,0.057129,0.064192,0.060113]},{"name":"Auto","s":[0.019785,0.019648,0.019592,0.019289,0.018148,0.017864,null,0.020855,0.023354,0.025171,0.026878,0.029373,0.031594]},{"name":"Payroll loans","s":[0.00641,0.006886,0.007371,0.007447,0.007583,0.008294,null,0.009452,0.009613,0.009085,0.01001,0.011844,0.013835]}]}</script>
+<script>
+(function(){
+  'use strict';
+
+  const DATA = JSON.parse(document.getElementById('dataset').textContent);
+  const P = DATA.periods, BANKS = DATA.banks, MODS = DATA.mods || [], BRIDGE = DATA.bridge || [];
+  const byId = Object.fromEntries(BANKS.map(b => [b.id, b]));
+  const LAST = P.length - 1;
+  const LS = 'farol.banks.v3';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+  const METRICS = {
+    roe: { key:'roe', label:'Return on equity', sub:'TTM, per cent', dec:1 },
+    nim: { key:'nim', label:'Intermediation margin', sub:'Net interest and payment revenue, TTM, per cent of average assets', dec:1 },
+    cor: { key:'cor', label:'Cost of risk', sub:'TTM provisions, per cent of credit', dec:2 },
+    eff: { key:'eff', label:'Efficiency ratio', sub:'Operating cost over income, per cent', dec:1 }
+  };
+  const CATS = [
+    { id:'all', label:'All institutions' },
+    { id:'Core', label:'Core' },
+    { id:'Payments & fintech', label:'Payments & fintech' },
+    { id:'Listed regional', label:'Listed regional' },
+    { id:'Federal & unlisted', label:'Federal & unlisted' }
+  ];
+  const COLUMNS = { name:'Institution', a:'Assets', cr:'Credit', roe:'ROE', cor:'Cost of risk', cov:'Coverage', eff:'Efficiency', share:'share of assets' };
+
+  /* ── state ─────────────────────────────────────────────────────────── */
+  const state = { period: LAST, cat:'all', metric:'roe', sel: BANKS[0].id, q:'', sortK:'a', sortD:-1, bridgeAll:false };
+  try {
+    const s = JSON.parse(localStorage.getItem(LS) || '{}');
+    if (s.cat && CATS.some(c => c.id === s.cat)) state.cat = s.cat;
+    if (s.metric && METRICS[s.metric]) state.metric = s.metric;
+    if (s.sel && byId[s.sel]) state.sel = s.sel;
+    if (s.sortK && COLUMNS[s.sortK]) state.sortK = s.sortK;
+    if (s.sortD === 1 || s.sortD === -1) state.sortD = s.sortD;
+  } catch (e) {}
+  function save(){
+    try { localStorage.setItem(LS, JSON.stringify({ cat:state.cat, metric:state.metric, sel:state.sel, sortK:state.sortK, sortD:state.sortD })); } catch (e) {}
+  }
+
+  /* ── format ────────────────────────────────────────────────────────── */
+  const nf = (v, d) => v == null ? '—' : Number(v).toLocaleString('en-US', { minimumFractionDigits:d == null ? 0 : d, maximumFractionDigits:d == null ? 0 : d });
+  const pct = (v, d) => v == null ? '—' : (v * 100).toFixed(d == null ? 1 : d) + '%';
+  const pctNum = (v, d) => v == null ? '—' : (v * 100).toFixed(d == null ? 1 : d);
+  const qLabel = p => p.slice(2, 4) + 'Q' + Math.ceil(Number(p.slice(4)) / 3);
+  const qFull = p => p.slice(0, 4) + ' Q' + Math.ceil(Number(p.slice(4)) / 3);
+  const median = arr => {
+    if (!arr.length) return null;
+    const s = arr.slice().sort((a, b) => a - b), m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+  const deltaTxt = (d, unit, dec) => d == null ? '' : (d > 0 ? '▲ ' : d < 0 ? '▼ ' : '') + Math.abs(d).toFixed(dec) + (unit === '%' ? '' : ' ') + unit;
+
+  /* ── derived data ──────────────────────────────────────────────────── */
+  const filtered = () => state.cat === 'all' ? BANKS : BANKS.filter(b => b.cat === state.cat);
+  const share = (b, i) => {
+    const tot = BANKS.reduce((s, x) => s + (x.a[i] || 0), 0);
+    return tot ? (b.a[i] || 0) / tot : null;
+  };
+  const globalAssets = i => BANKS.reduce((s, b) => s + (b.a[i] || 0), 0);
+
+  function agg(list, i){
+    let assets = 0, credit = 0, dep = 0, ni = 0, eq = 0;
+    for (const b of list){
+      assets += b.a[i] || 0; credit += b.cr[i] || 0; dep += b.dep[i] || 0;
+      ni += b.ni[i] || 0; eq += b.eq[i] || 0;
+    }
+    const wt = (k, w) => {
+      let n = 0, d = 0;
+      for (const b of list){
+        const v = b[k][i], z = b[w][i];
+        if (v != null && z != null && z > 0){ n += v * z; d += z; }
+      }
+      return d ? n / d : null;
+    };
+    const effs = list.map(b => b.eff[i]).filter(v => v != null && v > 0);
+    return {
+      assets, credit, dep, ni, eq,
+      roe: eq ? ni / eq : null,
+      cor: wt('cor', 'cr'),
+      cov: wt('cov', 'cr'),
+      eff: median(effs)
+    };
+  }
+
+  function chartIds(){
+    const i = state.period;
+    const list = filtered().filter(b => b.a[i] != null).sort((a, b) => b.a[i] - a.a[i]);
+    const ids = list.slice(0, 6).map(b => b.id);
+    if (!ids.includes(state.sel) && list.some(b => b.id === state.sel)) ids.push(state.sel);
+    return ids;
+  }
+
+  /* ── tooltip ───────────────────────────────────────────────────────── */
+  const tip = $('#tip');
+  function showTip(x, y, html){
+    tip.innerHTML = html;
+    tip.classList.add('on');
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let left = x + 16, top = y - h - 14;
+    if (left + w > window.innerWidth - 10) left = x - w - 16;
+    if (top < 10) top = y + 18;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+  const hideTip = () => tip.classList.remove('on');
+
+  /* ── chrome ────────────────────────────────────────────────────────── */
+  let chromeBuilt = false;
+  function renderChrome(){
+    const sel = $('#period');
+    if (!chromeBuilt){
+      sel.innerHTML = P.map((p, i) => `<option value="${i}">${qFull(p)}</option>`).join('');
+      $('#chips').innerHTML = CATS.map(c => {
+        const n = c.id === 'all' ? BANKS.length : BANKS.filter(b => b.cat === c.id).length;
+        return `<button class="chip" type="button" data-cat="${c.id}">${c.label}<i>${n}</i></button>`;
+      }).join('');
+      chromeBuilt = true;
+    }
+    sel.value = String(state.period);
+    $$('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.cat === state.cat)));
+
+    $$('.tab').forEach(t => t.setAttribute('aria-pressed', String(t.dataset.metric === state.metric)));
+    $('#openDefs').setAttribute('aria-expanded', 'false');
+  }
+
+  function renderFacts(){
+    const assets = globalAssets(LAST) / 1000;
+    $('#factAssets').textContent = 'R$ ' + assets.toFixed(1) + 'tn';
+    const n = filtered().filter(b => b.a[state.period] != null).length;
+    $('#kpiNote').textContent = `${n} reporting institutions · ${qFull(P[state.period])} · deltas versus ${state.period ? qFull(P[state.period - 1]) : '—'}.`;
+  }
+
+  /* ── KPIs ──────────────────────────────────────────────────────────── */
+  const KPI_DEFS = [
+    { label:'Total assets', unit:'R$ tn', get:a => a.assets / 1000, dec:2, kind:'rel', tone:'neutral' },
+    { label:'Credit book', unit:'R$ tn', get:a => a.credit / 1000, dec:2, kind:'rel', tone:'neutral' },
+    { label:'Net income', unit:'R$ bn', get:a => a.ni, dec:1, kind:'rel', tone:'sign' },
+    { label:'Return on equity', unit:'TTM', get:a => a.roe * 100, dec:1, kind:'pp', tone:'sign', suffix:'%' },
+    { label:'Cost of risk', unit:'TTM', get:a => a.cor * 100, dec:2, kind:'pp', tone:'inverse', suffix:'%' },
+    { label:'ECL coverage', unit:'of credit', get:a => a.cov * 100, dec:1, kind:'pp', tone:'sign', suffix:'%' }
+  ];
+
+  function renderKpis(){
+    const list = filtered().filter(b => b.a[state.period] != null);
+    const cur = agg(list, state.period);
+    const prev = state.period > 0 ? agg(list, state.period - 1) : null;
+    $('#kpis').innerHTML = KPI_DEFS.map(k => {
+      const v = k.get(cur), p = prev ? k.get(prev) : null;
+      let d = '', cls = 'flat';
+      if (v != null && p != null){
+        if (k.kind === 'pp'){
+          const diff = v - p;
+          d = deltaTxt(diff, 'pp', k.dec);
+          cls = Math.abs(diff) < 0.005 ? 'flat' : diff > 0 ? 'up' : 'down';
+        } else {
+          const diff = p ? (v / p - 1) * 100 : null;
+          d = diff == null ? '' : deltaTxt(diff, '%', 1);
+          cls = diff == null || Math.abs(diff) < 0.05 ? 'flat' : diff > 0 ? 'up' : 'down';
+        }
+        if (k.tone === 'inverse' && cls !== 'flat') cls = cls === 'up' ? 'down' : 'up';
+        if (k.tone === 'neutral') cls = 'flat';
+      }
+      const val = v == null ? '—' : (k.suffix ? v.toFixed(k.dec) + k.suffix : nf(v, k.dec));
+      return `<div class="kpi">
+        <div class="kpi-lab"><span>${k.label}</span><em>${k.unit}</em></div>
+        <div class="kpi-val">${val}</div>
+        <div class="kpi-d"><span class="${cls}">${d || '—'}</span><span class="note">QoQ</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  /* ── focus card ────────────────────────────────────────────────────── */
+  function sparkline(vals){
+    const pts = vals.map((v, i) => ({ v, i })).filter(p => p.v != null);
+    if (pts.length < 2) return '';
+    const min = Math.min(...pts.map(p => p.v)), max = Math.max(...pts.map(p => p.v));
+    const lo = min - (max - min) * 0.25 || min - 0.01, hi = max + (max - min) * 0.25 || max + 0.01;
+    const X = i => 2 + (i / (vals.length - 1)) * 196;
+    const Y = v => 42 - ((v - lo) / (hi - lo)) * 38;
+    let d = '', first = null, last = null;
+    pts.forEach(p => {
+      const x = X(p.i).toFixed(1), y = Y(p.v).toFixed(1);
+      d += (first ? 'L' : 'M') + x + ' ' + y + ' ';
+      if (!first) first = p; last = p;
+    });
+    const area = d + `L${X(last.i).toFixed(1)} 44 L${X(first.i).toFixed(1)} 44 Z`;
+    return `<svg class="spark-svg" viewBox="0 0 200 44" preserveAspectRatio="none" aria-hidden="true">
+      <path d="${area}" fill="var(--accent)" opacity=".10"/>
+      <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+    </svg>`;
+  }
+
+  function renderFocus(){
+    const b = byId[state.sel];
+    if (!b) return;
+    const i = state.period;
+    const list = filtered();
+    const roe = b.roe[i], prior = i > 0 ? b.roe[i - 1] : null;
+    const peers = list.filter(x => x.id !== b.id && x.roe[i] != null);
+    const medRoe = median(peers.map(x => x.roe[i]));
+    const medCor = median(peers.filter(x => x.cor[i] != null).map(x => x.cor[i]));
+    const ranked = list.filter(x => x.a[i] != null).sort((x, y) => y.a[i] - x.a[i]);
+    const rank = ranked.findIndex(x => x.id === b.id) + 1;
+
+    $('#focusName').textContent = b.name;
+    $('#focusMeta').textContent = `${b.cat} · TCB ${b.tcb || '—'}`;
+    $('#focusRank').textContent = b.a[i] == null ? 'No asset data' : rank ? '#' + rank + ' by assets' : 'Outside filter';
+    $('#focusRoe').textContent = pct(roe, 1);
+
+    let d = '', cls = 'flat';
+    if (roe != null && prior != null){
+      const diff = (roe - prior) * 100;
+      d = deltaTxt(diff, 'pp', 1) + ' QoQ';
+      cls = Math.abs(diff) < 0.05 ? 'flat' : diff > 0 ? 'up' : 'down';
+    }
+    $('#focusDelta').innerHTML = d ? `<span class="${cls}">${d}</span>` : `<span class="flat">${roe == null ? 'No ROE data' : 'No prior data'}</span>`;
+
+    const sparkVals = [];
+    for (let k = Math.max(0, i - 11); k <= i; k++) sparkVals.push(b.roe[k]);
+    $('#focusSpark').innerHTML = sparkline(sparkVals);
+
+    const cells = [
+      ['ROA', pct(b.roa[i], 2)],
+      ['Margin', pct(b.nim[i], 2)],
+      ['Cost of risk', pct(b.cor[i], 2)],
+      ['Coverage', pct(b.cov[i], 1)],
+      ['Efficiency', pct(b.eff[i], 1)],
+      ['Credit / assets', b.a[i] ? pct(b.cr[i] / b.a[i], 0) : '—']
+    ];
+    $('#focusMetrics').innerHTML = cells.map(c => `<div><dt>${c[0]}</dt><dd>${c[1]}</dd></div>`).join('');
+
+    let note = 'Asset-weighted sector medians are shown in the positioning chart.';
+    if (roe != null && medRoe != null && b.cor[i] != null && medCor != null){
+      const dr = Math.abs((roe - medRoe) * 100).toFixed(1);
+      const dc = Math.abs((b.cor[i] - medCor) * 100).toFixed(2);
+      note = `ROE is <b>${dr} pp ${roe >= medRoe ? 'above' : 'below'}</b> the peer median; cost of risk runs <b>${dc} pp ${b.cor[i] <= medCor ? 'below' : 'above'}</b> it.`;
+    }
+    $('#focusNote').innerHTML = note;
+  }
+
+  /* ── line chart ────────────────────────────────────────────────────── */
+  function renderLine(){
+    const host = $('#lineChart');
+    const cfg = METRICS[state.metric];
+    $('#lineTitle').textContent = cfg.label;
+    $('#lineSub').textContent = cfg.sub;
+
+    const W = Math.max(300, Math.round(host.clientWidth || 720));
+    const H = 300, m = { l:44, r:14, t:14, b:26 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const i1 = state.period, i0 = Math.max(0, i1 - 7);
+    const ids = chartIds();
+
+    if (!ids.length){
+      host.innerHTML = '<p class="empty">No institutions in this filter.</p>';
+      $('#lineLegend').innerHTML = '';
+      return;
+    }
+
+    let lo = Infinity, hi = -Infinity;
+    ids.forEach(id => {
+      for (let i = i0; i <= i1; i++){
+        const v = byId[id][cfg.key][i];
+        if (v != null){ lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      }
+    });
+    if (!isFinite(lo)){ host.innerHTML = '<p class="empty">No observations for this metric.</p>'; return; }
+    const rawMin = lo;
+    const pad = (hi - lo) * 0.22 || 0.01;
+    lo = lo - pad;
+    if (rawMin >= 0 && lo < 0) lo = 0;
+    hi = hi + pad;
+    const X = i => i0 === i1 ? m.l + iw / 2 : m.l + ((i - i0) / (i1 - i0)) * iw;
+    const Y = v => m.t + ih - ((v - lo) / (hi - lo)) * ih;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${cfg.label}, ${qLabel(P[i0])} to ${qLabel(P[i1])}">`;
+    for (let t = 0; t <= 4; t++){
+      const v = lo + (hi - lo) * t / 4, y = Y(v);
+      svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-dasharray="2 4"/>`;
+      svg += `<text x="${m.l - 8}" y="${(y + 3.3).toFixed(1)}" text-anchor="end" class="ax">${pctNum(v, 1)}%</text>`;
+    }
+    for (let i = i0; i <= i1; i++){
+      if (i1 - i0 > 6 && (i - i0) % 2 && i !== i0 && i !== i1) continue;
+      svg += `<text x="${X(i).toFixed(1)}" y="${H - 7}" text-anchor="middle" class="ax">${qLabel(P[i])}</text>`;
+    }
+
+    const drawSeries = (id, selected) => {
+      const vals = byId[id][cfg.key];
+      let d = '', area = '', run = [];
+      const flush = () => {
+        if (!run.length) return;
+        const line = run.map((p, k) => (k ? 'L' : 'M') + p.x + ' ' + p.y).join(' ');
+        d += line + ' ';
+        area += line + ` L${run[run.length - 1].x} ${(m.t + ih)} L${run[0].x} ${(m.t + ih)} Z `;
+        run = [];
+      };
+      for (let i = i0; i <= i1; i++){
+        const v = vals[i];
+        if (v == null){ flush(); continue; }
+        run.push({ x: X(i).toFixed(1), y: Y(v).toFixed(1) });
+      }
+      flush();
+      if (selected){
+        svg += `<path d="${area}" fill="var(--accent)" opacity=".07"/>`;
+        svg += `<path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      } else {
+        svg += `<path d="${d}" fill="none" stroke="var(--muted)" stroke-opacity=".62" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      }
+    };
+    ids.filter(id => id !== state.sel).forEach(id => drawSeries(id, false));
+    if (ids.includes(state.sel)) drawSeries(state.sel, true);
+    if (i0 === i1){
+      ids.forEach(id => {
+        const v = byId[id][cfg.key][i0];
+        if (v == null) return;
+        const sel = id === state.sel;
+        svg += `<circle cx="${X(i0).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3.4" fill="${sel ? 'var(--accent)' : 'var(--muted)'}"/>`;
+      });
+    }
+
+    svg += `<g class="hov" opacity="0"><line y1="${m.t}" y2="${m.t + ih}" stroke="var(--fg)" stroke-opacity=".32" stroke-dasharray="2 3"/>`;
+    ids.forEach(id => { svg += `<circle r="3.4" fill="var(--surface)" stroke="${id === state.sel ? 'var(--accent)' : 'var(--muted)'}" stroke-width="1.5"/>`; });
+    svg += `</g><rect class="hit" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" style="cursor:crosshair"/>`;
+    svg += '</svg>';
+    host.innerHTML = svg;
+
+    const el = host.querySelector('svg'), hit = el.querySelector('.hit'), hov = el.querySelector('.hov');
+    const hl = hov.querySelector('line'), circles = Array.from(hov.querySelectorAll('circle'));
+    hit.addEventListener('pointermove', ev => {
+      const r = el.getBoundingClientRect();
+      const px = (ev.clientX - r.left) * (W / r.width);
+      let k = Math.round(((px - m.l) / iw) * (i1 - i0)) + i0;
+      k = Math.max(i0, Math.min(i1, k));
+      const x = X(k);
+      hl.setAttribute('x1', x); hl.setAttribute('x2', x);
+      circles.forEach((c, j) => {
+        const v = byId[ids[j]][cfg.key][k];
+        if (v == null){ c.setAttribute('opacity', '0'); return; }
+        c.setAttribute('opacity', '1'); c.setAttribute('cx', x); c.setAttribute('cy', Y(v));
+      });
+      hov.setAttribute('opacity', '1');
+      const rows = ids.map(id => ({ id, v: byId[id][cfg.key][k] })).filter(o => o.v != null).sort((a, b) => b.v - a.v);
+      const html = `<div class="tt-h">${qFull(P[k])}</div>` + rows.map(o =>
+        `<div class="tt-r${o.id === state.sel ? ' sel' : ''}"><span>${byId[o.id].name}</span><b>${pct(o.v, cfg.dec)}</b></div>`).join('');
+      showTip(ev.clientX, ev.clientY, html);
+    });
+    hit.addEventListener('pointerleave', () => { hov.setAttribute('opacity', '0'); hideTip(); });
+
+    $('#lineLegend').innerHTML = ids.map(id => {
+      const b = byId[id], v = b[cfg.key][state.period];
+      return `<button class="lg" type="button" data-id="${id}" aria-pressed="${id === state.sel}">
+        <i></i><span>${b.name}</span><b>${pct(v, cfg.dec)}</b></button>`;
+    }).join('');
+  }
+
+  /* ── scatter ───────────────────────────────────────────────────────── */
+  function renderScatter(){
+    const host = $('#scatter');
+    const i = state.period;
+    const all = filtered()
+      .filter(b => b.roe[i] != null && b.eff[i] != null && b.a[i] != null)
+      .map(b => ({ id:b.id, name:b.name, x:b.eff[i], y:b.roe[i], a:b.a[i], cat:b.cat }));
+    const pts = all.filter(p => p.x >= 0.05 && p.x <= 1.5 && p.y >= -0.2 && p.y <= 0.75);
+    const hidden = all.length - pts.length;
+    $('#scatterCount').textContent = hidden
+      ? `${pts.length} of ${all.length} shown · ${hidden} off the plotted range`
+      : `${pts.length} institutions with data`;
+    if (pts.length < 2){ host.innerHTML = '<p class="empty">Not enough observations for this filter.</p>'; return; }
+
+    const W = Math.max(300, Math.round(host.clientWidth || 600)), H = 348;
+    const m = { l:42, r:16, t:18, b:40 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+    const x0 = Math.max(0, Math.min(...xs) - 0.04), x1 = Math.max(...xs) + 0.05;
+    const y0 = Math.min(0, Math.min(...ys) - 0.02), y1 = Math.max(...ys) + 0.05;
+    const X = v => m.l + ((v - x0) / (x1 - x0)) * iw;
+    const Y = v => m.t + ih - ((v - y0) / (y1 - y0)) * ih;
+    const medX = median(xs), medY = median(ys);
+    const maxA = Math.max(...pts.map(p => p.a));
+    const R = p => 4 + 9 * Math.sqrt(p.a / maxA);
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Return on equity against efficiency ratio">`;
+    for (let t = 0; t <= 4; t++){
+      const y = m.t + ih * t / 4;
+      const val = y1 - (y1 - y0) * t / 4;
+      svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2 4"/>`;
+      svg += `<text x="${m.l - 8}" y="${y + 3.3}" text-anchor="end" class="ax">${pctNum(val, 0)}%</text>`;
+    }
+    for (let t = 0; t <= 4; t++){
+      const x = m.l + iw * t / 4, val = x0 + (x1 - x0) * t / 4;
+      svg += `<text x="${x}" y="${H - 20}" text-anchor="middle" class="ax">${pctNum(val, 0)}%</text>`;
+    }
+    svg += `<text x="${W - m.r}" y="${H - 4}" text-anchor="end" class="ax">Efficiency ratio →</text>`;
+    svg += `<text x="${m.l}" y="${m.t - 6}" class="ax">ROE ↑</text>`;
+    svg += `<line x1="${X(medX)}" x2="${X(medX)}" y1="${m.t}" y2="${m.t + ih}" stroke="var(--fg)" stroke-opacity=".2" stroke-dasharray="3 4"/>`;
+    svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(medY)}" y2="${Y(medY)}" stroke="var(--fg)" stroke-opacity=".2" stroke-dasharray="3 4"/>`;
+    svg += `<text x="${W - m.r}" y="${Y(medY) - 4}" text-anchor="end" class="ax">median ${pctNum(medY, 0)}%</text>`;
+    svg += `<text x="${X(medX) + 4}" y="${m.t + 9}" class="ax">median ${pctNum(medX, 0)}%</text>`;
+
+    pts.slice().sort((a, b) => state.sel === a.id ? 1 : state.sel === b.id ? -1 : b.a - a.a).forEach(p => {
+      const sel = p.id === state.sel;
+      svg += `<circle class="pt" data-id="${p.id}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${R(p).toFixed(1)}"
+        fill="${sel ? 'var(--accent)' : 'var(--fg)'}" fill-opacity="${sel ? '.92' : '.32'}"
+        stroke="${sel ? 'var(--accent)' : 'var(--fg)'}" stroke-opacity="${sel ? '1' : '.45'}" stroke-width="1"
+        tabindex="0" role="button" aria-label="${p.name}: ROE ${pct(p.y, 1)}, efficiency ${pct(p.x, 1)}"
+        style="cursor:pointer;transition:fill-opacity .12s ease"></circle>`;
+    });
+
+    const placed = [];
+    const labelled = pts.filter(p => (W > 480 && p.a > 250) || p.id === state.sel).sort((a, b) => a.y - b.y);
+    labelled.forEach(p => {
+      const w = p.name.length * 5.1 + 6, h = 11;
+      const right = X(p.x) < W * 0.76;
+      let bx = right ? X(p.x) + R(p) + 4 : X(p.x) - R(p) - 4 - w;
+      bx = Math.max(m.l + 1, Math.min(W - m.r - w, bx));
+      let by = Y(p.y) - h / 2, ok = false;
+      for (const dy of [0, -12, 12, -24, 24, -36]){
+        const y2 = by + dy;
+        if (y2 < m.t || y2 > m.t + ih - h) continue;
+        if (!placed.some(q => Math.abs(q.x - bx) < q.w && Math.abs(q.y - y2) < h)){
+          by = y2; placed.push({ x:bx, y:by, w, h }); ok = true; break;
+        }
+      }
+      if (!ok) return;
+      svg += `<text x="${bx.toFixed(1)}" y="${(by + 8.4).toFixed(1)}" class="dot-label${p.id === state.sel ? ' sel' : ''}">${p.name}</text>`;
+    });
+    svg += '</svg>';
+    host.innerHTML = svg;
+
+    host.querySelectorAll('.pt').forEach(c => {
+      const id = c.dataset.id;
+      c.addEventListener('pointerenter', ev => {
+        const p = pts.find(o => o.id === id);
+        showTip(ev.clientX, ev.clientY, `<div class="tt-h">${p.name}</div>
+          <div class="tt-r"><span>ROE</span><b>${pct(p.y, 1)}</b></div>
+          <div class="tt-r"><span>Efficiency</span><b>${pct(p.x, 1)}</b></div>
+          <div class="tt-r"><span>Assets</span><b>R$ ${nf(p.a, 0)} bn</b></div>`);
+      });
+      c.addEventListener('pointermove', ev => showTip(ev.clientX, ev.clientY, tip.innerHTML));
+      c.addEventListener('pointerleave', hideTip);
+      const choose = () => { state.sel = id; save(); renderFocus(); renderLine(); renderScatter(); renderTable(); };
+      c.addEventListener('click', choose);
+      c.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); choose(); } });
+    });
+  }
+
+  /* ── system risk ───────────────────────────────────────────────────── */
+  function renderRisk(){
+    const i1 = state.period, i0 = Math.max(0, i1 - 7);
+    const W = Math.max(260, Math.round($('#riskChart').clientWidth || 420)), H = 128;
+    const m = { l:28, r:8, t:8, b:20 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const series = [
+      { name:'Households', vals:DATA.npl.PF, color:'var(--accent)' },
+      { name:'Corporates', vals:DATA.npl.PJ, color:'var(--muted)' }
+    ];
+    let hi = 0;
+    series.forEach(s => { for (let i = i0; i <= i1; i++) if (s.vals[i] != null) hi = Math.max(hi, s.vals[i]); });
+    const top = Math.max(0.05, hi * 1.3);
+    const X = i => i0 === i1 ? m.l + iw / 2 : m.l + ((i - i0) / (i1 - i0)) * iw;
+    const Y = v => m.t + ih - (v / top) * ih;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="System NPL for households and corporates">`;
+    for (let t = 0; t <= 2; t++){
+      const v = top * t / 2, y = Y(v);
+      svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2 4"/>`;
+      svg += `<text x="${m.l - 6}" y="${y + 3.2}" text-anchor="end" class="ax">${pctNum(v, 1)}%</text>`;
+    }
+    series.forEach(s => {
+      let run = [];
+      const flush = () => {
+        if (!run.length) return;
+        const d = run.map((p, k) => (k ? 'L' : 'M') + p.x + ' ' + p.y).join(' ');
+        if (s.name === 'Households') svg += `<path d="${d} L${run[run.length - 1].x} ${m.t + ih} L${run[0].x} ${m.t + ih} Z" fill="var(--accent)" opacity=".06"/>`;
+        svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+        run = [];
+      };
+      for (let i = i0; i <= i1; i++){
+        const v = s.vals[i];
+        if (v == null){ flush(); continue; }
+        run.push({ x:X(i).toFixed(1), y:Y(v).toFixed(1) });
+      }
+      flush();
+    });
+    if (i0 === i1){
+      series.forEach(s => {
+        const v = s.vals[i0];
+        if (v != null) svg += `<circle cx="${X(i0).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" fill="${s.color}"/>`;
+      });
+    }
+    for (let i = i0; i <= i1; i++){
+      if (i1 - i0 > 5 && (i - i0) % 2 && i !== i1) continue;
+      svg += `<text x="${X(i).toFixed(1)}" y="${H - 5}" text-anchor="middle" class="ax">${qLabel(P[i])}</text>`;
+    }
+    svg += '</svg>';
+    $('#riskChart').innerHTML = svg;
+
+    const pf = DATA.npl.PF[i1], pj = DATA.npl.PJ[i1];
+    const pf0 = i1 > 0 ? DATA.npl.PF[i1 - 1] : null, pj0 = i1 > 0 ? DATA.npl.PJ[i1 - 1] : null;
+    $('#nplPF').textContent = pct(pf, 2);
+    $('#nplPJ').textContent = pct(pj, 2);
+    const bp = (v, p) => v == null || p == null ? null : (v - p) * 10000;
+    const bpf = bp(pf, pf0), bpj = bp(pj, pj0);
+    const setD = (el, d) => {
+      el.textContent = d == null ? '—' : (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0) + ' bp';
+      el.className = d == null ? 'flat' : d > 0.5 ? 'down' : d < -0.5 ? 'up' : 'flat';
+    };
+    setD($('#nplPFD'), bpf); setD($('#nplPJD'), bpj);
+    $('#riskPeriod').textContent = qFull(P[i1]);
+
+    const mods = MODS.map(m => ({ name:m.name, v:m.s[i1], p:i1 ? m.s[i1 - 1] : null })).filter(m => m.v != null);
+    const maxMod = Math.max(...mods.map(m => m.v), 0.01);
+    $('#mods').innerHTML = mods.length ? mods.map((m, k) => {
+      const d = m.p == null ? null : (m.v - m.p) * 10000;
+      return `<div class="mod" title="${m.name}: ${pct(m.v, 1)}${d == null ? '' : ' · ' + (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0) + ' bp QoQ'}">
+        <span>${m.name}</span>
+        <div class="mod-track"><i class="${k === 0 ? 'top' : ''}" style="width:${Math.max(3, (m.v / maxMod) * 100).toFixed(1)}%"></i></div>
+        <b>${pct(m.v, 1)}</b>
+      </div>`;
+    }).join('') : '<p class="caveat" style="border:0;padding:0;margin:0">No product breakdown is published for this quarter.</p>';
+    $('#modsPeriod').textContent = qFull(P[i1]);
+
+    let s0 = i0;
+    while (s0 <= i1 && DATA.npl.PF[s0] == null) s0++;
+    const base = s0 <= i1 ? DATA.npl.PF[s0] : null;
+    $('#riskCaveat').textContent = base == null
+      ? 'Total-panel NPL is not charted: the BCB redefined it to problem assets in 2025 Q1.'
+      : s0 === i1 || Math.abs(base - pf) < 0.00005
+        ? `Household NPL stands at ${pct(pf, 2)} in ${qLabel(P[i1])}. Total-panel NPL is not charted: the BCB redefined it to problem assets in 2025 Q1.`
+        : `Household NPL has moved from ${pct(base, 1)} in ${qLabel(P[s0])} to ${pct(pf, 2)}. Total-panel NPL is not charted: the BCB redefined it to problem assets in 2025 Q1.`;
+  }
+
+  /* ── table ─────────────────────────────────────────────────────────── */
+  function tableRows(){
+    const q = state.q.trim().toLowerCase();
+    let rows = filtered().filter(b => !q || b.name.toLowerCase().includes(q));
+    const d = state.sortD, k = state.sortK, i = state.period;
+    rows.sort((a, b) => {
+      if (k === 'name') return a.name.localeCompare(b.name) * d;
+      const va = k === 'share' ? share(a, i) : a[k] ? a[k][i] : null;
+      const vb = k === 'share' ? share(b, i) : b[k] ? b[k][i] : null;
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      return (va - vb) * d;
+    });
+    return rows;
+  }
+
+  function renderTable(){
+    const i = state.period;
+    const all = filtered();
+    const ranked = all.filter(b => b.a[i] != null).sort((x, y) => y.a[i] - x.a[i]);
+    const rankOf = id => ranked.findIndex(b => b.id === id) + 1;
+    const rows = tableRows();
+    const maxShare = Math.max(...all.map(b => share(b, i) || 0), 0.0001);
+
+    $('#peerBody').innerHTML = rows.length ? rows.map(b => {
+      const roe = b.roe[i], prev = i > 0 ? b.roe[i - 1] : null;
+      let sub = '';
+      if (roe != null && prev != null){
+        const d = (roe - prev) * 100;
+        sub = `<em class="sub ${Math.abs(d) < 0.05 ? 'flat' : d > 0 ? 'up' : 'down'}">${d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(1)} pp</em>`;
+      }
+      const crPrev = i > 0 ? b.cr[i - 1] : null;
+      const crD = b.cr[i] != null && crPrev ? (b.cr[i] / crPrev - 1) * 100 : null;
+      const crSub = crD == null ? '' : `<em class="sub flat">${crD >= 0 ? '+' : '−'}${Math.abs(crD).toFixed(1)}%</em>`;
+      const sh = share(b, i);
+      return `<tr data-id="${b.id}" tabindex="0" aria-selected="${b.id === state.sel}">
+        <td class="rank">${rankOf(b.id) || '—'}</td>
+        <td class="name"><span class="nm">${b.name}</span><span class="cat">${b.cat}</span></td>
+        <td>${nf(b.a[i], 0)}</td>
+        <td>${nf(b.cr[i], 0)}${crSub}</td>
+        <td>${pct(roe, 1)}${sub}</td>
+        <td>${pct(b.cor[i], 2)}</td>
+        <td>${pct(b.cov[i], 1)}</td>
+        <td>${pct(b.eff[i], 1)}</td>
+        <td><span class="share"><span>${pct(sh, 2)}</span><span class="bar"><b style="width:${Math.max(2, (sh / maxShare) * 100).toFixed(1)}%"></b></span></span></td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="9" class="tbl-empty">No institution matches that filter.</td></tr>';
+
+    $('#peerCount').textContent = rows.length + ' of ' + all.length;
+    $('#tableFoot').textContent = `${rows.length} institution${rows.length === 1 ? '' : 's'} shown · ${qFull(P[i])} · share of panel assets`;
+    $('#sortName').textContent = COLUMNS[state.sortK] + (state.sortD === -1 ? ' ↓' : ' ↑');
+
+    $$('#peerTable thead th').forEach(th => {
+      const btn = th.querySelector('button');
+      if (!btn) return;
+      const k = btn.dataset.sort;
+      if (k === state.sortK){
+        th.setAttribute('aria-sort', state.sortD === -1 ? 'descending' : 'ascending');
+        btn.querySelector('.ar').textContent = state.sortD === -1 ? '↓' : '↑';
+      } else {
+        th.removeAttribute('aria-sort');
+        btn.querySelector('.ar').textContent = '';
+      }
+    });
+
+    $$('#peerBody tr[data-id]').forEach(tr => {
+      const choose = () => {
+        state.sel = tr.dataset.id; save();
+        renderFocus(); renderLine(); renderScatter(); renderTable();
+      };
+      tr.addEventListener('click', choose);
+      tr.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); choose(); } });
+    });
+  }
+
+  /* ── bridge ────────────────────────────────────────────────────────── */
+  function renderBridge(){
+    const diff = r => r.gaap ? (r.ifd - r.gaap) / r.gaap * 100 : 0;
+    const close = BRIDGE.filter(r => Math.abs(diff(r)) <= 0.5).length;
+    $('#bridgeSum').innerHTML = `<b>${close} of ${BRIDGE.length}</b> line items reconcile within ±0.5%. The remaining gaps are scope and presentation, not data error: insurance, subsidiaries at equity, and net-versus-gross reporting.`;
+    const rows = state.bridgeAll ? BRIDGE : BRIDGE.slice(0, 7);
+    $('#bridgeBody').innerHTML = rows.map(r => {
+      const d = diff(r);
+      const cls = Math.abs(d) <= 0.5 ? 'ok' : Math.abs(d) <= 5 ? 'warn' : 'bad';
+      return `<tr>
+        <td class="bank">${r.bank}</td>
+        <td>${r.line}</td>
+        <td class="n">${nf(r.gaap, 2)}</td>
+        <td class="n">${nf(r.ifd, 2)}</td>
+        <td class="n"><span class="flag ${cls}">${d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(2)}%</span></td>
+        <td class="note">${r.note || '—'}</td>
+      </tr>`;
+    }).join('');
+    $('#bridgeToggle').textContent = state.bridgeAll ? 'Show first 7' : 'Show all ' + BRIDGE.length;
+  }
+
+  /* ── render all ────────────────────────────────────────────────────── */
+  function renderAll(){
+    renderChrome();
+    renderFacts();
+    renderKpis();
+    renderFocus();
+    renderLine();
+    renderScatter();
+    renderRisk();
+    renderTable();
+    renderBridge();
+  }
+
+  /* ── events ────────────────────────────────────────────────────────── */
+  $('#period').addEventListener('change', e => {
+    state.period = Number(e.target.value);
+    save(); renderAll(); hideTip();
+  });
+
+  $('#chips').addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    state.cat = chip.dataset.cat;
+    const list = filtered();
+    if (!list.some(b => b.id === state.sel) && list.length){
+      const top = list.filter(b => b.a[state.period] != null).sort((a, b) => b.a[state.period] - a.a[state.period])[0];
+      if (top) state.sel = top.id;
+    }
+    save(); renderAll(); hideTip();
+  });
+
+  $$('.tab').forEach(t => t.addEventListener('click', () => {
+    state.metric = t.dataset.metric;
+    save(); renderChrome(); renderLine(); hideTip();
+  }));
+
+  $('#lineLegend').addEventListener('click', e => {
+    const lg = e.target.closest('.lg');
+    if (!lg) return;
+    state.sel = lg.dataset.id; save();
+    renderFocus(); renderLine(); renderScatter(); renderTable();
+  });
+
+  $('#search').addEventListener('input', e => { state.q = e.target.value; renderTable(); });
+
+  $('#peerTable thead').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-sort]');
+    if (!btn) return;
+    const k = btn.dataset.sort;
+    if (state.sortK === k) state.sortD *= -1;
+    else { state.sortK = k; state.sortD = k === 'name' ? 1 : -1; }
+    save(); renderTable();
+  });
+
+  $('#bridgeToggle').addEventListener('click', () => { state.bridgeAll = !state.bridgeAll; renderBridge(); });
+
+  function setDrawer(open){
+    $('#drawer').classList.toggle('on', open);
+    $('#drawer').inert = !open;
+    $('#drawer').setAttribute('aria-hidden', String(!open));
+    $('#scrim').classList.toggle('on', open);
+    $('#openDefs').setAttribute('aria-expanded', String(open));
+    if (open) $('#closeDefs').focus(); else $('#openDefs').focus();
+  }
+  $('#openDefs').addEventListener('click', () => setDrawer(true));
+  $('#closeDefs').addEventListener('click', () => setDrawer(false));
+  $('#scrim').addEventListener('click', () => setDrawer(false));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && $('#drawer').classList.contains('on')) setDrawer(false);
+  });
+
+  $('#exportCsv').addEventListener('click', () => {
+    const i = state.period;
+    const rows = tableRows();
+    const head = ['Institution','Category','TCB','Assets (R$ bn)','Credit (R$ bn)','ROE (TTM %)','ROA (TTM %)','Intermediation margin (TTM %)','Cost of risk (%)','Coverage (%)','Efficiency (%)','Share of assets (%)'];
+    const csv = [head.join(',')].concat(rows.map(b => [
+      b.name, b.cat, b.tcb || '',
+      b.a[i] == null ? '' : b.a[i].toFixed(1),
+      b.cr[i] == null ? '' : b.cr[i].toFixed(1),
+      b.roe[i] == null ? '' : (b.roe[i] * 100).toFixed(2),
+      b.roa[i] == null ? '' : (b.roa[i] * 100).toFixed(2),
+      b.nim[i] == null ? '' : (b.nim[i] * 100).toFixed(2),
+      b.cor[i] == null ? '' : (b.cor[i] * 100).toFixed(2),
+      b.cov[i] == null ? '' : (b.cov[i] * 100).toFixed(2),
+      b.eff[i] == null ? '' : (b.eff[i] * 100).toFixed(2),
+      share(b, i) == null ? '' : (share(b, i) * 100).toFixed(3)
+    ].map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','))).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type:'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'farol-brazilian-banks-' + P[i] + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+    const toast = $('#toast');
+    toast.textContent = rows.length + ' institutions exported · ' + qFull(P[i]);
+    toast.classList.add('on');
+    setTimeout(() => toast.classList.remove('on'), 2200);
+  });
+
+  let rt;
+  window.addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => {
+      hideTip();
+      renderLine(); renderScatter(); renderRisk();
+    }, 120);
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

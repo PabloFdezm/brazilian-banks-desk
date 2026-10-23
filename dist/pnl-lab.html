@@ -1,0 +1,1324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FARO — Income lab</title>
+<meta name="description" content="Twelve-month income bridge and DuPont decomposition for 34 Brazilian banking conglomerates: net interest income, provision charge, the result left for costs and tax, net income, and the return on equity traced back to each line.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .plhead{ border-bottom: 1px solid var(--border); }
+  .plhead__top{ display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; padding: 28px 28px 18px; }
+  .plhead__id{ min-width: 0; }
+  .plhead h1{ font-size: clamp(26px, 3vw, 40px); font-weight: 700; letter-spacing: -0.03em; margin: 8px 0 0; max-width: 22ch; }
+  .plhead__meta{ font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); margin-top: 8px; }
+  .plhead__ctl{ margin-left: auto; display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+  .plhead__ctl label{ display: flex; flex-direction: column; gap: 5px; }
+  .plhead__ctl select{
+    appearance: none; background: var(--surface); border: 1px solid var(--border); color: var(--fg);
+    height: 30px; padding: 0 26px 0 10px; font-family: var(--font-mono); font-size: 11.5px; border-radius: var(--r); max-width: 260px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 13px) 13px, calc(100% - 9px) 13px;
+    background-size: 4px 4px, 4px 4px; background-repeat: no-repeat;
+  }
+  .plhead__ctl select:hover{ border-color: var(--border-strong); }
+  .plstats{ padding: 0 28px 26px; }
+  .bridgeWrap{ display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 1px; background: var(--border); border-top: 1px solid var(--border); }
+  .bridgeMain{ background: var(--bg); padding: 18px 28px 22px; min-width: 0; }
+  .bridgeSide{ background: var(--surface); padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .pline{ display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); align-items: baseline; }
+  .pline:last-child{ border-bottom: 0; }
+  .pline__l{ font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+  .pline__s{ width: 7px; height: 7px; border-radius: 1px; flex: 0 0 7px; }
+  .pline__v{ font-family: var(--font-mono); font-size: 12px; white-space: nowrap; }
+  .pline__c{ font-family: var(--font-mono); font-size: 9.5px; color: var(--muted-dim); margin-left: 6px; }
+  /* ---------- distribution under the bridge ---------- */
+  .dist{ margin-top: 16px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); overflow: hidden; }
+  .dist__head{ display: flex; align-items: flex-end; gap: 12px 20px; flex-wrap: wrap; padding: 11px 14px 10px; border-bottom: 1px solid var(--border); }
+  .dist__id{ min-width: 0; }
+  .dist__k{ display: block; font-family: var(--font-mono); font-size: 9px; letter-spacing: .11em; text-transform: uppercase; color: var(--muted-dim); }
+  .dist__t{ display: block; font-family: var(--font-display); font-size: 15px; font-weight: 600; letter-spacing: -.015em; margin-top: 5px; }
+  .dist__t em{ font-style: normal; font-family: var(--font-mono); font-size: 10px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
+  .dist__rd{ margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 0; max-width: 52%; }
+  .dist__row{ display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 2px 7px; max-width: 100%; min-width: 0; font-family: var(--font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .dist__row b{ font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dist__row u{ text-decoration: none; color: var(--fg); }
+  .dist__row--mut{ font-size: 9.5px; color: var(--muted); gap: 5px; }
+  .dist__row--mut u{ color: var(--fg); }
+  .dist__sw{ width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); flex: 0 0 8px; }
+  .dist__svg{ display: block; width: 100%; padding: 2px 0 0; }
+  .dist__pt{ cursor: pointer; }
+  .dist__pt:focus{ outline: none; }
+  .dist__pt:focus-visible circle:last-of-type{ stroke: var(--accent); stroke-width: 2; }
+  .dist__hit{ fill: transparent; }
+  .dist__pt:hover circle:last-of-type{ fill: var(--fg); }
+  .dist__pt:hover circle:last-of-type[data-sel="1"]{ fill: var(--accent); }
+  .dist__axis{ font-family: var(--font-mono); font-size: 9px; fill: var(--muted); }
+  .scat{ border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); padding: 4px 10px 0; }
+  .axnote{ display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9px; color: var(--muted-dim); padding: 0 8px 8px; }
+
+  /* ---------- DuPont ---------- */
+  .dpWrap{ display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+  .dpMain{ background: var(--bg); padding: 16px 18px 18px; min-width: 0; }
+  .dpSide{ background: var(--surface); padding: 16px 18px 16px; min-width: 0; }
+  .dpTop{ display: flex; align-items: flex-end; gap: 14px 30px; flex-wrap: wrap; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+  .dpBig{ min-width: 0; }
+  .dpBig__k{ display: block; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .dpBig__v{ display: block; font-family: var(--font-display); font-size: 54px; font-weight: 700; letter-spacing: -.045em; line-height: .92; font-variant-numeric: tabular-nums; margin-top: 7px; }
+  .dpBig__v small{ font-size: 26px; font-weight: 600; letter-spacing: -.02em; color: var(--muted); }
+  .dpBig__d{ display: block; font-family: var(--font-mono); font-size: 11px; margin-top: 9px; white-space: nowrap; }
+  .dpId{ flex: 1 1 320px; min-width: 0; padding-bottom: 3px; }
+  .dpId__f{ font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted-dim); }
+  .dpId__n{ font-family: var(--font-display); font-size: 20px; letter-spacing: -.015em; margin-top: 8px; font-variant-numeric: tabular-nums; line-height: 1.35; }
+  .dpId__n b{ font-weight: 600; }
+  .dpId__n i{ font-style: normal; color: var(--muted-dim); padding: 0 3px; }
+  .dpId__c{ font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.55; max-width: 62ch; }
+  .dpWf{ margin: 4px -8px 0; }
+  .dpWf svg{ display: block; width: 100%; height: auto; }
+  .dwb{ cursor: pointer; }
+  .dwb__r{ transition: opacity .12s ease; }
+  .dwb:hover .dwb__r{ opacity: .84; }
+  .dwb:focus{ outline: none; }
+  .dwb:focus-visible .dwb__r{ stroke: var(--accent); stroke-width: 2; }
+  .dwb[data-on="1"] .dwb__r{ stroke: var(--fg); stroke-width: 1.5; }
+  .dpHatchL{ stroke: var(--warn); opacity: .6; }
+  /* cohort ghost: the same columns at their cohort median, drawn behind */
+  .dwgh{ pointer-events: none; }
+  .dwgh__r{ fill: color-mix(in oklch, var(--fg) 7%, var(--surface)); stroke: var(--border-strong); stroke-dasharray: 2 3; }
+  .dwgh__c{ stroke: var(--border-strong); stroke-dasharray: 2 3; opacity: .55; }
+  .dwgh__g{ stroke: var(--muted-dim); stroke-dasharray: 1 3; opacity: .9; }
+  #ghostBtn[aria-pressed="true"]{ background: var(--surface-2); border-color: var(--border-strong); color: var(--fg); }
+  #ghostBtn[aria-pressed="false"]{ color: var(--muted); border-style: dashed; }
+  #ghostBtn:hover{ background: var(--surface-3); border-color: var(--border-strong); color: var(--fg); }
+  .dpFacs{ display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r); margin-top: 12px; overflow: hidden; }
+  .dpFac{ background: var(--surface); text-align: left; padding: 10px 12px 11px; min-width: 0; transition: background .12s ease; }
+  .dpFac:hover{ background: var(--surface-2); }
+  .dpFac[data-on="1"]{ background: var(--accent-soft); }
+  .dpFac__k{ display: block; font-family: var(--font-mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dpFac[data-on="1"] .dpFac__k{ color: var(--fg); }
+  .dpFac__v{ display: block; font-family: var(--font-mono); font-size: 19px; font-weight: 500; letter-spacing: -.025em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .dpFac__m{ display: block; font-family: var(--font-mono); font-size: 9.5px; color: var(--muted-dim); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dpFac__t{ position: relative; display: block; height: 10px; margin-top: 9px; }
+  .dpFac__t::before{ content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 1px; background: var(--border-strong); opacity: .5; }
+  .dpFac__t b{ position: absolute; top: 0; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--fg); }
+  .dpFac__t u{ position: absolute; top: -1px; width: 1px; height: 10px; background: var(--muted-dim); }
+  .dpCap{ margin-top: 13px; font-size: 11.5px; color: var(--muted); line-height: 1.6; max-width: 100ch; }
+  .dpCap b{ color: var(--fg); font-weight: 500; }
+  .dpRead h3{ font-family: var(--font-display); font-size: 14px; font-weight: 600; }
+  .dpRead__q{ font-family: var(--font-mono); font-size: 9.5px; color: var(--muted-dim); margin-top: 4px; }
+  .dpRead ul{ list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 13px; }
+  .dpRead li{ padding-left: 12px; position: relative; }
+  .dpRead li::before{ content: ""; position: absolute; left: 0; top: 6px; width: 4px; height: 4px; background: var(--border-strong); }
+  .dpRead li[data-on="1"]::before{ background: var(--accent); }
+  .dpRead__n{ display: block; font-size: 12px; color: var(--fg); }
+  .dpRead__n b{ font-family: var(--font-mono); font-weight: 500; margin-left: 7px; }
+  .dpRead__s{ display: block; font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+  .dpRead__s b{ color: var(--fg); font-weight: 500; }
+  .dpRead__tag{ display: block; font-family: var(--font-mono); font-size: 9.5px; color: var(--muted-dim); margin-top: 5px; }
+  .dpRead__foot{ margin-top: 14px; }
+  .dpMiss{ border: 1px dashed var(--border-strong); border-radius: var(--r); padding: 22px 18px; color: var(--muted); font-size: 12px; max-width: 78ch; line-height: 1.6; }
+  .dpMiss .link{ margin-top: 9px; display: inline-block; }
+
+  @media (max-width: 1100px){
+    .dist__rd{ max-width: none; margin-left: 0; align-items: flex-start; }
+    .dist__row{ justify-content: flex-start; }
+    .bridgeWrap{ grid-template-columns: minmax(0,1fr); }
+    .bridgeSide{ border-top: 1px solid var(--border); }
+    .dpWrap{ grid-template-columns: minmax(0,1fr); }
+    .dpSide{ border-top: 1px solid var(--border); }
+  }
+  @media (max-width: 980px){
+    .plhead__top{ padding: 20px 16px 14px; }
+    .plhead__ctl{ width: 100%; margin-left: 0; }
+    .plhead__ctl select{ max-width: none; width: 100%; }
+    .plstats{ padding: 0 16px 20px; }
+    .bridgeMain{ padding: 14px 16px 18px; }
+    .bridgeSide{ padding: 14px 16px; }
+    .dpBig__v{ font-size: 44px; }
+    .dpId__n{ font-size: 17px; }
+    .dpFacs{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+  }
+  @media (max-width: 720px){
+    .dist__head{ padding: 10px 11px 9px; }
+    .dist__t{ font-size: 14px; }
+    .dpMain{ padding: 13px 14px 14px; }
+    .dpSide{ padding: 13px 14px 14px; }
+    .dpFacs{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .dpId__n{ font-size: 15px; }
+    .dpBig__v{ font-size: 40px; }
+  }
+</style>
+</head>
+<body data-page="pnl" data-title="Income lab" data-kicker="Twelve-month income · IF.Data">
+
+<aside class="rail" id="rail"></aside>
+
+<div class="main">
+  <header class="topbar" id="topbar"></header>
+
+  <main class="content">
+
+    <section class="plhead" data-od-id="pnl-head">
+      <div class="plhead__top">
+        <div class="plhead__id">
+          <p class="eyebrow">02 · Income lab · 12 months to <span id="pq">—</span></p>
+          <h1 id="bName">—</h1>
+          <p class="plhead__meta" id="bMeta">—</p>
+        </div>
+        <div class="plhead__ctl">
+          <label>
+            <span class="eyebrow">Institution</span>
+            <select id="bankSel" aria-label="Choose institution"></select>
+          </label>
+          <div style="display:flex; flex-direction:column; gap:5px">
+            <span class="eyebrow">Units</span>
+            <div class="seg" id="segUnit">
+              <button data-u="bn" aria-pressed="true">R$ bn</button>
+              <button data-u="pct" aria-pressed="false">% of assets</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="plstats"><div class="stats" id="stats"></div></div>
+    </section>
+
+    <section data-od-id="pnl-bridge" id="sec-bridge">
+      <div class="sec" style="padding-bottom:10px">
+        <div class="sec__head" style="margin-bottom:0">
+          <p class="eyebrow">01 · Bridge</p>
+          <h2>From net interest income to net income</h2>
+          <div class="spacer"></div>
+          <span class="footnote" id="bridgeUnitNote"></span>
+        </div>
+      </div>
+      <div class="bridgeWrap">
+        <div class="bridgeMain">
+          <div class="wf" id="bridge"></div>
+          <div id="stripHost"></div>
+          <p class="footnote" style="margin-top:9px">One dot per filer on a value axis; the shaded column is the middle 50% and the dashed rule the cohort median. Click a dot — or tab to it and press Enter — to load that institution into the bridge. Cohort: <span id="cohName">all conglomerates</span>.</p>
+        </div>
+        <aside class="bridgeSide" id="bridgeSide" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="pnl-margin-risk">
+      <div class="sec__head">
+        <p class="eyebrow">02 · Margin against risk</p>
+        <h2>What the margin earns and what credit takes back</h2>
+        <div class="spacer"></div>
+        <div class="seg" id="segAxis">
+          <button data-y="cor" aria-pressed="true">Cost of risk</button>
+          <button data-y="eff" aria-pressed="false">Efficiency</button>
+        </div>
+      </div>
+      <div class="scat">
+        <div class="chart" id="scatter"></div>
+        <div class="axnote"><span>← thinner margin</span><span>NIM, % of assets</span><span>fatter →</span></div>
+      </div>
+      <p class="footnote" style="margin-top:10px">Bubble area is twelve-month net income. Dashed lines are cohort medians. Click a bank to load it into the bridge above.</p>
+    </section>
+
+    <section class="sec" data-od-id="pnl-dupont" id="dupont">
+      <div class="sec__head">
+        <p class="eyebrow">03 · DuPont</p>
+        <h2>How the top line becomes the return on equity</h2>
+        <div class="spacer"></div>
+        <div class="seg" id="segMode" role="group" aria-label="DuPont reading">
+          <button data-m="level" aria-pressed="true">Build the level</button>
+          <button data-m="move" aria-pressed="false">Attribute the move</button>
+        </div>
+        <div class="seg" id="segStep" role="group" aria-label="Change window" style="display:none">
+          <button data-s="1" aria-pressed="true">QoQ</button>
+          <button data-s="4" aria-pressed="false">4 quarters</button>
+        </div>
+        <button class="btn btn--sm" id="ghostBtn" aria-pressed="true"
+          title="Cohort median of each column, drawn behind this bank’s bars. Click to hide.">Ghost · cohort median</button>
+      </div>
+      <div class="dpWrap">
+        <div class="dpMain">
+          <div class="dpTop" id="dpTop"></div>
+          <div class="dpWf" id="dpWf"></div>
+          <div class="dpFacs" id="dpFacs"></div>
+          <p class="dpCap" id="dpCap"></p>
+        </div>
+        <aside class="dpRead dpSide" id="dpRead" aria-live="polite"></aside>
+      </div>
+      <p class="footnote" style="margin-top:12px" id="dpFoot"></p>
+    </section>
+
+    <section class="sec" data-od-id="pnl-table">
+      <div class="sec__head">
+        <p class="eyebrow">04 · Cross-section</p>
+        <h2>The same ladder, one line per institution</h2>
+        <div class="spacer"></div>
+        <div class="seg" id="segView" role="group" aria-label="Table view">
+          <button data-v="flows" aria-pressed="true">Income lines</button>
+          <button data-v="dupont" aria-pressed="false">DuPont</button>
+        </div>
+        <button class="btn btn--sm" id="export">Export CSV</button>
+      </div>
+      <div class="tbl-scroll">
+        <table class="dt" id="plTbl">
+          <thead><tr id="plHead"></tr></thead>
+          <tbody></tbody>
+          <tfoot id="plFoot"></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="pnl-method">
+      <details class="method">
+        <summary>How the bridge and the identity are built — and what they are not</summary>
+        <div class="mbody">
+          <dl class="mgrid">
+            <div><dt>Reported</dt><dd>Net income, net interest margin, cost of risk, average assets and the credit book all come from IF.Data, twelve months to the selected quarter.</dd></div>
+            <div><dt>Derived</dt><dd><b>Net interest income</b> = NIM × total assets. <b>Provision charge</b> = cost of risk × credit book. Both are reconstructions from reported ratios, not filed statements.</dd></div>
+            <div><dt>Residual</dt><dd><b>Other result</b> is net income less the two lines above: fee and treasury income, insurance, operating costs and tax, netted. IF.Data does not publish that split, so we never break it apart.</dd></div>
+            <div><dt>Why the bridge reconciles</dt><dd>The residual is solved, so the four bars always sum to reported net income. If NIM or cost of risk were mis-reported upstream, the error lands in “other result” and stays visible there.</dd></div>
+          </dl>
+          <div class="note">
+            <div class="note__k">Read with care</div>
+            <p><strong>Margin definitions differ by institution.</strong> Where a bank's own release defines NIM on a different base — or where treasury and insurance results swing — the bridge moves while reported net income does not. The Income lab therefore never restates the reported line.</p>
+          </div>
+          <dl class="mgrid" style="margin-top:16px">
+            <div><dt>DuPont identity</dt><dd><b>ROE = leverage × (margin − cost of risk × credit share + other)</b>. Anchored on the two ratios each bank files, ROE and ROA, so the chain closes on the reported number rather than on a reconstruction of it.</dd></div>
+            <div><dt>What is solved</dt><dd><b>Other result</b> is the only solved line: reported ROA less margin, plus the credit charge. It carries fees, treasury, insurance, operating costs and tax netted, because IF.Data does not publish that split.</dd></div>
+            <div><dt>Why two residuals can differ</dt><dd>Section 01 solves its residual on <b>spot</b> balances; the identity solves its own on the <b>average-balance ratios</b> the banks report. The gap is small but not zero, and it is printed rather than smoothed.</dd></div>
+            <div><dt>Attribution</dt><dd>Each contribution uses the midpoint convention — ΔA × average B + average A × ΔB — so the five bars sum to the reported change with no plug. A series the harness splits at a structural break is not attributed across the join.</dd></div>
+            <div><dt>Cohort ghost</dt><dd>The light shapes behind the bars are the <b>median of each column</b> across the active cohort — never a bank assembled out of medians. Each ghost bar is a median of that one line, so the ghost's steps and its closing column (the median bank's own return) need not agree; the dotted drop draws that difference instead of letting a plug absorb it. In the move reading the ghost is anchored where this bank started and takes the cohort's median step in each factor, so the comparison is of moves rather than levels.</dd></div>
+          </dl>
+          <p class="footnote">Twelve-month flows, not annualised quarters. Missing quarters are gaps, never interpolated.</p>
+        </div>
+      </details>
+    </section>
+
+  </main>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/breaks.js"></script>
+<script src="assets/validate.js"></script>
+<script src="assets/capital.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  const F = window.Faro, P = F.P, B = F.B;
+  const { pct, bn, pp, qLabel, dirClass, esc, nf } = F.fmt;
+
+  const params = new URLSearchParams(location.search);
+  const qb = params.get('b');
+  if (qb && F.byId(qb)) { F.state.b = qb; F.save(); }
+  let bankId = F.byId(F.state.b) ? F.state.b : B[0].id;
+
+  let unit = 'bn';
+  let line = 'prov';
+  let yAxis = 'cor';
+
+  const bank = () => F.byId(bankId) || B[0];
+  const cohort = () => F.list();
+  const val = (pl, k) => unit === 'bn' ? pl[k] : pl['r' + k];
+
+  const LINES = {
+    nii: { l: 'Net interest income', s: 'Margin', c: 'var(--h5)' },
+    prov: { l: 'Provision charge', s: 'Provisions', c: 'var(--neg)' },
+    other: { l: 'Other result', s: 'Other', c: 'var(--warn)' },
+    ni: { l: 'Net income', s: 'Net income', c: 'var(--fg)' }
+  };
+
+  function setBank(id){
+    if (!F.byId(id)) return;
+    bankId = id;
+    try { history.replaceState(null, '', '?b=' + encodeURIComponent(id)); } catch (e) {}
+    F.setBank(id);
+  }
+  /* F.setBank emits 'bank', so renderAll is bound once below */
+
+  /* ---------- select ---------- */
+  function renderSelect(){
+    const sel = document.getElementById('bankSel');
+    const groups = {};
+    B.forEach(x => { (groups[x.cat] = groups[x.cat] || []).push(x); });
+    sel.innerHTML = Object.keys(groups).map(g => `<optgroup label="${esc(g)}">${groups[g]
+      .sort((a, c) => (c.ni[F.LAST] || 0) - (a.ni[F.LAST] || 0))
+      .map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}</optgroup>`).join('');
+    sel.value = bankId;
+  }
+  function syncSelect(){ const s = document.getElementById('bankSel'); if (s) s.value = bankId; }
+  document.getElementById('bankSel').onchange = e => setBank(e.target.value);
+
+  document.querySelectorAll('#segUnit button').forEach(btn => {
+    btn.onclick = () => {
+      unit = btn.dataset.u;
+      document.querySelectorAll('#segUnit button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.u === unit)));
+      renderAll();
+    };
+  });
+  document.querySelectorAll('#segAxis button').forEach(btn => {
+    btn.onclick = () => {
+      yAxis = btn.dataset.y;
+      document.querySelectorAll('#segAxis button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.y === yAxis)));
+      drawScatter();
+    };
+  });
+
+  /* ---------- header + stats ---------- */
+  function renderHead(){
+    const b = bank(), p = F.state.p, pl = F.pnl(b, p);
+    document.getElementById('pq').textContent = qLabel(P[p]);
+    document.getElementById('bName').textContent = b.name;
+    document.getElementById('bMeta').textContent =
+      `${b.cat} · BCB ${b.id.slice(1).padStart(7, '0')} · assets ${bn(b.a[p])} bn · credit ${bn(b.cr[p])} bn · equity ${bn(b.eq[p])} bn`;
+    document.getElementById('cohName').textContent = cohort().length + ' institutions';
+
+    const prev = p > 0 ? F.pnl(b, p - 1) : null;
+    const cells = [
+      { k: 'nii', l: 'Net interest income' },
+      { k: 'prov', l: 'Provision charge', neg: true },
+      { k: 'pre', l: 'Before other costs' },
+      { k: 'other', l: 'Other result', residual: true },
+      { k: 'ni', l: 'Net income' }
+    ];
+    document.getElementById('stats').innerHTML = cells.map(c => {
+      const v = pl[c.k], pv = prev ? prev[c.k] : null;
+      const d = v != null && pv != null ? v - pv : null;
+      const unitTxt = unit === 'bn' ? `R$ ${bn(v)} bn` : pct(pl['r' + c.k]);
+      const sub = unit === 'bn'
+        ? `${pct(pl['r' + c.k])} of assets${d != null ? ' · ' + (d > 0 ? '+' : '−') + bn(Math.abs(d)) + ' bn QoQ' : ''}`
+        : `${bn(v)} bn${d != null ? ' · ' + (d > 0 ? '+' : '−') + bn(Math.abs(d)) + ' bn QoQ' : ''}`;
+      return `<div class="stat" data-neg="${v != null && v < 0 ? 1 : 0}">
+        <div class="stat__l">${c.l}</div>
+        <div class="stat__v">${v == null ? '—' : (unit === 'bn' ? bn(v) : pct(pl['r' + c.k], 2))}${unit === 'bn' ? '<small>bn</small>' : ''}</div>
+        <div class="stat__m">${sub}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('bridgeUnitNote').textContent =
+      unit === 'bn' ? 'twelve months, R$ billion, not restated' : 'twelve months, share of total assets';
+  }
+
+  /* ---------- waterfall ---------- */
+  function drawBridge(){
+    const b = bank(), p = F.state.p, pl = F.pnl(b, p);
+    const host = document.getElementById('bridge');
+    if (pl.nii == null || pl.prov == null || pl.ni == null){
+      host.innerHTML = '<div class="empty">This institution does not report enough lines for the bridge in this quarter.</div>';
+      return;
+    }
+    const nii = val(pl, 'nii'), prov = val(pl, 'prov'), other = val(pl, 'other'), ni = val(pl, 'ni');
+    const pre = nii - prov;
+
+    const bars = [
+      { k: 'nii', a: 0, b: nii, end: nii, col: 'var(--h5)' },
+      { k: 'prov', a: pre, b: nii, end: pre, col: 'var(--neg)' },
+      { k: 'other', a: Math.min(pre, ni), b: Math.max(pre, ni), end: ni, col: other < 0 ? 'var(--neg)' : 'var(--h5)' },
+      { k: 'ni', a: 0, b: ni, end: ni, col: 'var(--fg)' }
+    ];
+
+    const W = Math.max(360, host.clientWidth), H = 292;
+    const pad = { l: 54, r: 12, t: 20, b: 46 };
+    let lo = Math.min(0, ...bars.map(x => Math.min(x.a, x.b)));
+    let hi = Math.max(0, ...bars.map(x => Math.max(x.a, x.b)));
+    const span = hi - lo || 1; lo -= span * 0.08; hi += span * 0.10;
+
+    const Y = v => pad.t + (H - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
+    const inner = W - pad.l - pad.r;
+    const slot = inner / bars.length;
+
+    const ticks = [];
+    for (let i = 0; i <= 4; i++) ticks.push(lo + (hi - lo) * i / 4);
+    const fmtAxis = v => unit === 'bn' ? bn(v) : (v * 100).toFixed(0) + '%';
+
+    const zeroY = Y(0);
+    const bw = Math.min(64, slot * 0.56);
+
+    let conns = '';
+    bars.forEach((bar, i) => {
+      if (i === 0) return;
+      const prevBar = bars[i - 1];
+      const x1 = pad.l + slot * (i - 1) + slot / 2 + bw / 2;
+      const x2 = pad.l + slot * i + slot / 2 - bw / 2;
+      const y = Y(prevBar.end).toFixed(1);
+      conns += `<line x1="${x1.toFixed(1)}" x2="${x2.toFixed(1)}" y1="${y}" y2="${y}" stroke="var(--border-strong)" stroke-dasharray="2 3"/>`;
+    });
+
+    const rects = bars.map((bar, i) => {
+      const cx = pad.l + slot * i + slot / 2;
+      const y0 = Math.min(Y(bar.a), Y(bar.b));
+      const h = Math.max(2, Math.abs(Y(bar.a) - Y(bar.b)));
+      const on = bar.k === line ? 1 : 0;
+      const label = unit === 'bn' ? bn(val(pl, bar.k)) : pct(pl['r' + bar.k]);
+      const signed = String(label).replace(/^-/, '−');
+      const negative = bar.k === 'prov' || (bar.k === 'other' && other < 0);
+      const sign = negative && !String(label).startsWith('-') ? '−' : '';
+      const topY = Y(bar.b), botY = Y(bar.a);
+      const up = bar.b >= bar.a;
+      const ly = up ? Math.max(pad.t + 11, Math.min(topY, botY) - 8) : Math.max(topY, botY) + 15;
+      return `<g class="wf__bar" data-k="${bar.k}" data-on="${on}" role="button" tabindex="0"
+          aria-label="${LINES[bar.k].l}: ${label}">
+        <rect x="${(cx - bw / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"
+          fill="${bar.col}" rx="1"/>
+        <text x="${cx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle"
+          style="font-family:var(--font-mono); font-size:11px; fill:var(--fg)">${sign}${signed}</text>
+        <text x="${cx.toFixed(1)}" y="${H - pad.b + 18}" text-anchor="middle"
+          style="font-family:var(--font-mono); font-size:8.5px; letter-spacing:.08em; text-transform:uppercase; fill:var(--muted)">${LINES[bar.k].s}</text>
+      </g>`;
+    }).join('');
+
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img"
+      aria-label="Income bridge for ${esc(b.name)}: net interest income ${bn(pl.nii)} billion, provisions ${bn(pl.prov)} billion, net income ${bn(pl.ni)} billion">
+      ${ticks.map(t => `<line class="gridline" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>
+        <text x="${pad.l - 8}" y="${(Y(t) + 3).toFixed(1)}" text-anchor="end">${fmtAxis(t)}</text>`).join('')}
+      <line x1="${pad.l}" x2="${W - pad.r}" y1="${zeroY.toFixed(1)}" y2="${zeroY.toFixed(1)}" stroke="var(--border-strong)"/>
+      ${conns}
+      ${rects}
+    </svg>`;
+
+    host.querySelectorAll('.wf__bar').forEach(g => {
+      const k = g.dataset.k;
+      g.addEventListener('click', () => { line = k; drawBridge(); drawStrip(); });
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); line = k; drawBridge(); drawStrip(); } });
+      g.addEventListener('mousemove', e => {
+        const l = LINES[k];
+        F.tip(`<div class="tt">${l.l}</div><div class="ts">${esc(b.name)} · ${qLabel(P[p])}</div>
+          <div class="tr"><span>12M</span><span>${bn(pl[k])} bn</span></div>
+          <div class="tr"><span>Share of assets</span><span>${pct(pl['r' + k])}</span></div>
+          <div class="tr"><span>Peer median</span><span>${pct(F.median(cohort().filter(x => x.id !== b.id).map(x => F.pnl(x, p)['r' + k])))}</span></div>`, e.clientX, e.clientY);
+      });
+      g.addEventListener('mouseleave', F.untip);
+    });
+  }
+
+  /* ---------- where every filer sits on the selected line ---------- */
+  function drawStrip(){
+    const p = F.state.p, b = bank(), host = document.getElementById('stripHost'), L = LINES[line];
+    const vals = cohort()
+      .map(x => ({ b: x, v: F.pnl(x, p)['r' + line] }))
+      .filter(o => o.v != null && Number.isFinite(o.v));
+
+    if (!vals.length){
+      host.innerHTML = `<div class="empty">No institution in this cohort files ${esc(L.l.toLowerCase())} for ${qLabel(P[p])}.</div>`;
+      return;
+    }
+
+    const bv = vals.find(o => o.b.id === b.id) || null;
+    const vs = vals.map(o => o.v).sort((a, z) => a - z);
+    const qtl = t => {
+      const i = (vs.length - 1) * t, f = Math.floor(i), c = Math.ceil(i);
+      return vs[f] + (vs[c] - vs[f]) * (i - f);
+    };
+    const q1 = qtl(0.25), med = qtl(0.5), q3 = qtl(0.75);
+
+    let lo = vs[0], hi = vs[vs.length - 1];
+    if (!(hi > lo)){ const g = Math.max(Math.abs(lo) * 0.04, 0.0008); lo -= g; hi += g; }
+    const pad = (hi - lo) * 0.05;
+    const d0 = lo - pad, d1 = hi + pad;
+
+    const W = Math.max(320, host.clientWidth || 620);
+    const padL = 13, padR = 13, inner = W - padL - padR;
+    const hGap = 9, laneGap = 10.4, LMAX = 10;
+    const X = v => padL + inner * (v - d0) / (d1 - d0);
+
+    /* beeswarm: dots stack upward only where their values crowd, so nothing overlaps */
+    const lastX = [];
+    let lanes = 0;
+    vals.slice().sort((a, z) => a.v - z.v).forEach(o => {
+      const x = X(o.v);
+      let lane = 0;
+      while (lane < LMAX && lastX[lane] != null && x - lastX[lane] < hGap) lane++;
+      if (lane === LMAX) lane -= 1;
+      lastX[lane] = x;
+      lanes = Math.max(lanes, lane + 1);
+      o.x = x; o.lane = lane;
+    });
+
+    /* the band grows with the pack instead of crushing it; the axis keeps its place */
+    const baseY = Math.max(58, 12 + (lanes - 1) * laneGap + 4);
+    const axisY = baseY + 8, H = axisY + 22;
+
+    /* a round tick step chosen by how many it actually yields, not by the raw ratio */
+    const target = W < 440 ? 3 : W < 680 ? 4 : 5;
+    const raw = (d1 - d0) / target;
+    const mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+    let step = mag, ticks = [];
+    [1, 2, 2.5, 5, 10].forEach(mult => {
+      const s = mult * mag, list = [];
+      for (let t = Math.ceil(d0 / s - 1e-9) * s; t <= d1 + 1e-9; t += s) list.push(t);
+      if (!list.length) return;
+      const score = Math.abs(list.length - target);
+      const bestScore = Math.abs(ticks.length - target);
+      if (!ticks.length || score < bestScore || (score === bestScore && list.length > ticks.length)){ step = s; ticks = list; }
+    });
+    const dp = Math.abs(step) < 0.01 ? 2 : 1;
+
+    const dots = vals.slice().sort((a, z) => (a.b.id === b.id ? 1 : 0) - (z.b.id === b.id ? 1 : 0)).map(o => {
+      const sel = o.b.id === b.id;
+      const cx = o.x.toFixed(1), cy = (baseY - o.lane * laneGap).toFixed(1);
+      return `<g class="dist__pt" data-id="${o.b.id}" role="button" tabindex="0"
+          aria-label="${esc(o.b.name)}: ${pct(o.v, 2)}">
+        <circle class="dist__hit" cx="${cx}" cy="${cy}" r="6"/>
+        ${sel ? `<circle cx="${cx}" cy="${cy}" r="4.8" fill="none" stroke="var(--accent-soft)" stroke-width="3"/>` : ''}
+        <circle cx="${cx}" cy="${cy}" r="${sel ? 4.8 : 3.4}" fill="${sel ? 'var(--accent)' : 'var(--muted-dim)'}"${sel ? ' data-sel="1"' : ''}/>
+      </g>`;
+    }).join('');
+
+    const axisLabels = ticks.map(t => {
+      const x = X(t);
+      const anchor = x < padL + 15 ? 'start' : x > W - padR - 15 ? 'end' : 'middle';
+      return `<g><line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${axisY}" y2="${axisY + 4}" stroke="var(--border-strong)"/>
+        <text class="dist__axis" x="${x.toFixed(1)}" y="${axisY + 17}" text-anchor="${anchor}">${pct(t, dp)}</text></g>`;
+    }).join('');
+
+    host.innerHTML = `<div class="dist" data-od-id="pnl-distribution">
+      <div class="dist__head">
+        <div class="dist__id">
+          <span class="dist__k">Where every filer sits</span>
+          <span class="dist__t">${esc(L.l)}<em> · % of assets · 12 months to ${qLabel(P[p])}</em></span>
+        </div>
+        <div class="dist__rd">
+          <span class="dist__row"><i class="dist__sw"></i><b>${esc(b.name)}</b><u>${bv ? pct(bv.v, 2) : 'not filed'}</u></span>
+          <span class="dist__row dist__row--mut"><span>median</span><u>${pct(med, 2)}</u><span>·</span><span>mid 50%</span><u>${pct(q1, 1)}–${pct(q3, 1)}</u><span>·</span><span>${vals.length} filers</span></span>
+        </div>
+      </div>
+      <svg class="dist__svg" viewBox="0 0 ${W} ${H}" height="${H}" role="img"
+        aria-label="Distribution of ${esc(L.l.toLowerCase())} across ${vals.length} institutions, median ${pct(med, 2)}">
+        <rect x="${X(q1).toFixed(1)}" y="12" width="${Math.max(1, X(q3) - X(q1)).toFixed(1)}" height="${axisY - 12}" fill="color-mix(in oklch, var(--fg) 5%, var(--surface))"/>
+        <line x1="${X(med).toFixed(1)}" x2="${X(med).toFixed(1)}" y1="12" y2="${axisY}" stroke="var(--border-strong)" stroke-dasharray="2 3"/>
+        ${lo < 0 && hi > 0 ? `<line x1="${X(0).toFixed(1)}" x2="${X(0).toFixed(1)}" y1="16" y2="${axisY}" stroke="var(--muted-dim)" stroke-dasharray="1 2"/>` : ''}
+        ${bv ? `<line x1="${X(bv.v).toFixed(1)}" x2="${X(bv.v).toFixed(1)}" y1="12" y2="${axisY}" stroke="var(--accent)" stroke-width="1" opacity=".22"/>` : ''}
+        <line x1="${padL}" x2="${W - padR}" y1="${axisY}" y2="${axisY}" stroke="var(--border-strong)"/>
+        ${axisLabels}
+        ${bv ? `<line x1="${X(bv.v).toFixed(1)}" x2="${X(bv.v).toFixed(1)}" y1="${axisY - 2}" y2="${axisY + 6}" stroke="var(--accent)" stroke-width="2.5"/>` : ''}
+        ${dots}
+      </svg>
+    </div>`;
+
+    host.querySelectorAll('.dist__pt').forEach(el => {
+      const o = vals.find(x => x.b.id === el.dataset.id);
+      const go = () => setBank(el.dataset.id);
+      const tip = e => F.tip(`<div class="tt">${esc(o.b.name)}</div>
+        <div class="tr"><span>${esc(L.l)}</span><span>${pct(o.v, 2)}</span></div>
+        <div class="tr"><span>In R$ bn</span><span>${bn(F.pnl(o.b, p)[line])}</span></div>
+        <div class="tr"><span>vs cohort median</span><span>${pp(o.v - med)}pp</span></div>`, e.clientX, e.clientY);
+      el.addEventListener('click', go);
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } });
+      el.addEventListener('mousemove', tip);
+      el.addEventListener('focus', () => { const r = el.getBoundingClientRect(); tip({ clientX: r.left + r.width / 2, clientY: r.top }); });
+      el.addEventListener('blur', F.untip);
+      el.addEventListener('mouseleave', F.untip);
+    });
+  }
+
+  /* ---------- side panel ---------- */
+  function drawSide(){
+    const b = bank(), p = F.state.p, pl = F.pnl(b, p);
+    const med = k => F.median(cohort().filter(x => x.id !== b.id).map(x => F.pnl(x, p)['r' + k]));
+    const row = (l, v, s, c) => `<div class="pline">
+      <span class="pline__l"><i class="pline__s" style="background:${c}"></i>${l}</span>
+      <span class="pline__v">${v}<span class="pline__c">c ${s}</span></span>
+    </div>`;
+    document.getElementById('bridgeSide').innerHTML = `
+      <div>
+        <div class="eyebrow">Per R$ 100 of assets · 12M</div>
+        <div style="font-family:var(--font-display); font-size:34px; font-weight:600; letter-spacing:-.03em; margin-top:6px">${pl.rni == null ? '—' : (pl.rni * 100).toFixed(1)}<small style="font-family:var(--font-mono); font-size:13px; color:var(--muted)"> net income</small></div>
+      </div>
+      <div>
+        ${row('Margin earned', pct(pl.rnii), 'c ' + pct(med('nii')), 'var(--h5)')}
+        ${row('Credit costs', pl.rprov == null ? '—' : '−' + pct(pl.rprov), 'c ' + pct(med('prov')), 'var(--neg)')}
+        ${row('Other result', pl.rother == null ? '—' : (pl.rother < 0 ? '−' : '') + pct(Math.abs(pl.rother)), 'c ' + pct(med('other')), 'var(--warn)')}
+      </div>
+      <div class="footnote" style="line-height:1.6">
+        “c” is the cohort median. Efficiency ${pct(F.val(b, 'eff', p))} · coverage ${pct(F.val(b, 'cov', p))} · ROA ${pct(F.val(b, 'roa', p))}.
+      </div>
+      <a class="link" href="bank-dossier.html?b=${encodeURIComponent(b.id)}">Full dossier on ${esc(b.name.split(' ')[0])} <span>→</span></a>`;
+  }
+
+  /* ---------- scatter ---------- */
+  function drawScatter(){
+    const p = F.state.p;
+    const host = document.getElementById('scatter');
+    const banks = cohort().filter(b => F.val(b, 'nim', p) != null && F.val(b, yAxis, p) != null && F.val(b, 'a', p) != null);
+    if (!banks.length){ host.innerHTML = '<div class="empty">No data.</div>'; return; }
+    const W = Math.max(360, host.clientWidth), H = 330;
+    const pad = { l: 52, r: 16, t: 16, b: 34 };
+    const xv = banks.map(b => F.val(b, 'nim', p)), yv = banks.map(b => F.val(b, yAxis, p));
+    let x0 = Math.min(...xv), x1 = Math.max(...xv), y0 = Math.min(...yv), y1 = Math.max(...yv);
+    const px = (x1 - x0) * 0.08 || 0.005, py = (y1 - y0) * 0.1 || 0.005;
+    x0 -= px; x1 += px; y0 -= py; y1 += py;
+    const X = v => pad.l + (W - pad.l - pad.r) * (v - x0) / (x1 - x0);
+    const Y = v => pad.t + (H - pad.t - pad.b) * (1 - (v - y0) / (y1 - y0));
+    const amax = Math.max(...banks.map(b => Math.abs(b.a[p])));
+    const rad = a => 3.2 + Math.sqrt(Math.abs(a) / amax) * 26;
+    const medX = F.median(xv), medY = F.median(yv);
+    const yLbl = yAxis === 'cor' ? 'Cost of risk' : 'Efficiency';
+
+    const pts = banks.slice().sort((a, b) => b.a[p] - a.a[p]);
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="NIM against ${yLbl}">
+      ${[0, 0.25, 0.5, 0.75, 1].map(t => {
+        const v = y0 + (y1 - y0) * t;
+        return `<line class="gridline" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/>
+          <text x="${pad.l - 8}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end">${pct(v, 0)}</text>`;
+      }).join('')}
+      ${[0, 0.33, 0.66, 1].map(t => {
+        const v = x0 + (x1 - x0) * t;
+        return `<line class="gridline" x1="${X(v).toFixed(1)}" x2="${X(v).toFixed(1)}" y1="${pad.t}" y2="${H - pad.b}"/>
+          <text x="${X(v).toFixed(1)}" y="${H - 10}" text-anchor="middle">${pct(v, 0)}</text>`;
+      }).join('')}
+      <line x1="${X(medX).toFixed(1)}" x2="${X(medX).toFixed(1)}" y1="${pad.t}" y2="${H - pad.b}" stroke="var(--border-strong)" stroke-dasharray="2 4"/>
+      <line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(medY).toFixed(1)}" y2="${Y(medY).toFixed(1)}" stroke="var(--border-strong)" stroke-dasharray="2 4"/>
+      ${pts.map(b => {
+        const sel = b.id === bankId;
+        return `<g class="pt" data-id="${b.id}">
+          <circle cx="${X(F.val(b, 'nim', p)).toFixed(1)}" cy="${Y(F.val(b, yAxis, p)).toFixed(1)}" r="${rad(F.val(b, 'a', p)).toFixed(1)}"
+            fill="${sel ? 'var(--accent)' : 'color-mix(in oklch, var(--fg) 22%, transparent)'}"
+            stroke="${sel ? 'var(--fg)' : 'var(--muted)'}" stroke-width="${sel ? 1.6 : 0.8}"/>
+        </g>`;
+      }).join('')}
+      <text x="${pad.l}" y="${pad.t - 4}" style="font-family:var(--font-mono); font-size:9px; fill:var(--muted)">${yLbl.toUpperCase()}</text>
+    </svg>`;
+    host.querySelectorAll('.pt').forEach(g => {
+      const b = F.byId(g.dataset.id), pl = F.pnl(b, p);
+      g.addEventListener('mousemove', e => F.tip(`<div class="tt">${esc(b.name)}</div>
+        <div class="ts">${esc(b.cat)} · ${qLabel(P[p])}</div>
+        <div class="tr"><span>NIM</span><span>${pct(F.val(b, 'nim', p))}</span></div>
+        <div class="tr"><span>${yLbl}</span><span>${pct(b[yAxis][p])}</span></div>
+        <div class="tr"><span>Net income 12M</span><span>${bn(pl.ni)} bn</span></div>`, e.clientX, e.clientY));
+      g.addEventListener('mouseleave', F.untip);
+      g.addEventListener('click', () => setBank(b.id));
+    });
+  }
+
+  /* ---------- DuPont ---------- */
+  const FAC = [
+    { k: 'em',  l: 'Leverage',     get: o => o.em,  fmt: v => v.toFixed(1) + '×' },
+    { k: 'nim', l: 'Margin',       get: o => o.nim, fmt: v => pct(v, 2) },
+    { k: 'cor', l: 'Cost of risk', get: o => o.cor, fmt: v => pct(v, 2) },
+    { k: 'w',   l: 'Credit share', get: o => o.w,   fmt: v => pct(v, 1) },
+    { k: 'O',   l: 'Other result', get: o => o.O,   fmt: v => pct(v, 2) }
+  ];
+  const FACK = {};
+  FAC.forEach(f => { FACK[f.k] = f; });
+
+  let dpSel = 'nim', dpStep = 1, dpMode = 'level', ghostOn = true;
+  try { const m = localStorage.getItem('faro.dupont.mode'); if (m === 'move' || m === 'level') dpMode = m; } catch (e) {}
+  try { const g = localStorage.getItem('faro.dupont.ghost'); if (g === '0') ghostOn = false; } catch (e) {}
+
+  const cohortFac = (k, p) => cohort()
+    .map(x => { const q = F.dupont(x, p); return q ? FACK[k].get(q) : null; })
+    .filter(v => v != null);
+
+  /* level: build ROE in points of average equity, top line first */
+  const LSET = [
+    { id: 'nii',   l: 'Net interest income', fac: 'nim', sub: 'filed NIM × leverage',
+      get: o => o.em * o.nim },
+    { id: 'prov',  l: 'Provision charge',    fac: 'cor', sub: 'cost of risk × credit share × leverage',
+      get: o => -o.em * o.e },
+    { id: 'other', l: 'Other result',        fac: 'O',   sub: 'solved: fees, costs and tax netted',
+      get: o => o.em * o.O, solved: true }
+  ];
+  /* move: the same five operands, as contributions to the change */
+  const MSET = [
+    { id: 'margin', l: 'Margin',       fac: 'nim' },
+    { id: 'cor',    l: 'Cost of risk', fac: 'cor' },
+    { id: 'mix',    l: 'Credit share', fac: 'w' },
+    { id: 'other',  l: 'Other result', fac: 'O' },
+    { id: 'lev',    l: 'Leverage',     fac: 'em' }
+  ];
+
+  /* The ghost: the same columns at their cohort median, drawn behind the bank's bars.
+     Each ghost bar is a median of that one column — never a bank assembled out of
+     medians — so the ghost's steps do not add to the median bank's return. Its closing
+     column is the median of the totals, and the difference is drawn as a dotted drop
+     instead of being absorbed by a plug. */
+  function ghostData(p, at){
+    if (dpMode === 'level'){
+      const os = cohort().map(x => F.dupont(x, p)).filter(Boolean);
+      if (os.length < 3) return null;
+      const vals = LSET.map(s => F.median(os.map(s.get)) * 100);
+      const total = F.median(os.map(o => o.roe)) * 100;
+      let cum = 0;
+      const bars = vals.map((v, i) => {
+        const bar = { id: 'g-' + LSET[i].id, v, from: cum, to: cum + v };
+        cum += v;
+        return bar;
+      });
+      bars.push({ id: 'g-roe', v: total, from: 0, to: total, total: true });
+      return { bars, n: os.length, total, gap: cum - total, map: { nii: vals[0], prov: vals[1], other: vals[2], roe: total } };
+    }
+    const ats = cohort().map(x => F.dupontAttr(x, p, dpStep)).filter(a => a && !a.blocked);
+    if (ats.length < 3) return null;
+    /* in the attribution the ghost is anchored where this bank started and takes the
+       cohort's median step in each factor — the typical quarter's moves, not the
+       typical bank's level, so the axis keeps its zoom */
+    const base = at.o.roe * 100;
+    const bars = [{ id: 'g-start', v: base, from: 0, to: base, total: true }];
+    let cum = base;
+    const map = {};
+    MSET.forEach(s => {
+      const v = F.median(ats.map(a => a.cm[s.id])) * 100;
+      map[s.id] = v;
+      bars.push({ id: 'g-' + s.id, v, from: cum, to: cum + v });
+      cum += v;
+    });
+    bars.push({ id: 'g-end', v: cum, from: 0, to: cum, total: true });
+    return { bars, n: ats.length, total: cum, gap: 0, map, path: true };
+  }
+
+  function facCell(k, o, p){
+    const f = FACK[k], v = f.get(o);
+    const vals = cohortFac(k, p);
+    const med = F.median(vals);
+    const pos = F.pctl(v, vals), mp = F.pctl(med, vals);
+    const rank = vals.filter(x => x > v).length + 1;
+    const on = dpSel === k;
+    return `<button class="dpFac" data-k="${k}" data-od-id="dupont-factor-${k}" data-on="${on ? 1 : 0}" aria-pressed="${on}"
+        aria-label="${f.l}: ${f.fmt(v)}, cohort median ${f.fmt(med)}">
+      <span class="dpFac__k">${f.l}</span>
+      <span class="dpFac__v">${f.fmt(v)}</span>
+      <span class="dpFac__m">med ${f.fmt(med)} · #${rank}/${vals.length}</span>
+      <i class="dpFac__t">${pos == null ? '' : `<b style="left:${pos.toFixed(1)}%"></b>`}${mp == null ? '' : `<u style="left:${mp.toFixed(1)}%"></u>`}</i>
+    </button>`;
+  }
+
+  const DEFS = {
+    em: (o) => `ROE ÷ ROA. Every point of ROA becomes <b>${o.em.toFixed(1)} points</b> of ROE. Spot assets ÷ equity is ${o.spot ? o.spot.toFixed(1) + '×' : '—'}; the gap is twelve-month averages against the quarter-end balance, not an error.`,
+    nim: (o) => `the filed twelve-month net interest margin, before credit costs — <b>${pct(o.nim, 2)}</b> on total assets. It is the top line of the identity, and leverage is what turns it into points of equity.`,
+    cor: (o) => `provisions over the credit book. On total assets it is <b>${pct(o.cor, 2)} × ${pct(o.w, 1)} = ${pct(o.e, 2)}</b>, which is the bar the waterfall draws, scaled again by leverage.`,
+    w: (o) => `the credit book as a share of total assets — how much of the balance sheet is lending at all. At <b>${pct(o.w, 1)}</b> it scales the credit charge. Where a bank's credit book re-defined at 2025 Q1 (mostly payments), the harness flags the join and the share is not comparable across it.`,
+    O: (o) => `solved, not filed: reported ROA ${pct(o.roa, 2)} − margin ${pct(o.nim, 2)} + credit charge ${pct(o.e, 2)} = <b>${pct(o.O, 2)}</b>. It carries fees, treasury, insurance, operating costs and tax netted, and absorbs the basis difference between the reported average-balance ratios and the spot balances behind section 01.`
+  };
+
+  function wrapWords(s, n){
+    const out = []; let line = '';
+    s.split(' ').forEach(w => {
+      if (line && (line + ' ' + w).length > n){ out.push(line); line = w; }
+      else line = line ? line + ' ' + w : w;
+    });
+    if (line) out.push(line);
+    return out.slice(0, 2);
+  }
+
+  function wfData(o, at){
+    const p = F.state.p;
+    if (dpMode === 'level'){
+      let cum = 0;
+      const bars = LSET.map(s => {
+        const v = s.get(o) * 100;
+        const bar = { id: s.id, l: s.l, fac: s.fac, sub: s.sub, solved: s.solved, v, from: cum, to: cum + v };
+        cum += v;
+        return bar;
+      });
+      bars.push({ id: 'roe', l: 'Return on equity', v: o.roe * 100, from: 0, to: o.roe * 100, total: true });
+      return { bars, ghost: ghostOn ? ghostData(p) : null };
+    }
+    if (!at || at.blocked) return null;
+    const pre = at.o.roe * 100;
+    const bars = [{ id: 'start', l: 'ROE ' + F.fmt.qShort(P[p - dpStep]), v: pre, from: 0, to: pre, total: true }];
+    let cum = pre;
+    MSET.forEach(s => {
+      const v = at.cm[s.id] * 100;
+      bars.push({ id: s.id, l: s.l, fac: s.fac, v, from: cum, to: cum + v });
+      cum += v;
+    });
+    bars.push({ id: 'end', l: 'ROE ' + F.fmt.qShort(P[p]), v: at.n.roe * 100, from: 0, to: at.n.roe * 100, total: true });
+    return { bars, ghost: ghostOn ? ghostData(p, at) : null };
+  }
+
+  const signed = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(1);
+
+  function drawWf(o, at, data){
+    const host = document.getElementById('dpWf');
+    const b = bank(), p = F.state.p;
+    if (!data){
+      const why = !at ? 'the identity is incomplete in one of the two quarters'
+        : at.blocked === 'start' ? 'this is the first quarter of the window, so there is nothing earlier to change from'
+        : at.blocked === 'split' ? `the harness splits this bank’s series at ${at.split.map(qLabel).join(', ')}, and change is never computed across a join`
+        : 'one of the two quarters has an incomplete identity, so no change is attributed';
+      host.innerHTML = `<div class="dpMiss" style="margin:14px 0">
+        No waterfall for this window: ${esc(why)}.
+        <br><button class="link" type="button" id="dpBack">Build the level instead <span>→</span></button>
+      </div>`;
+      const back = document.getElementById('dpBack');
+      if (back) back.onclick = () => { dpMode = 'level'; try { localStorage.setItem('faro.dupont.mode', dpMode); } catch (e) {} drawDupont(); };
+      return;
+    }
+
+    const bars = data.bars;
+    const ghost = data.ghost;
+    const W = Math.max(360, host.clientWidth || 860);
+    const H = W < 640 ? 296 : 358;
+    const pad = { l: 44, r: 16, t: 28, b: 54 };
+    /* the level reading is anchored at zero; the change reading zooms to the corridor
+       the steps actually move through, so a 1.0 pp move is not flattened by a 22 pp level */
+    const pts = dpMode === 'level'
+      ? bars.concat([{ from: 0, to: 0 }])
+      : bars.map(x => x.total ? { from: x.to, to: x.to } : x);
+    if (ghost) ghost.bars.forEach(x => pts.push({ from: x.from, to: x.to }));
+    let lo = Math.min(...pts.map(x => Math.min(x.from, x.to)));
+    let hi = Math.max(...pts.map(x => Math.max(x.from, x.to)));
+    const rawSpan = (hi - lo) || 1;
+    lo -= rawSpan * (dpMode === 'level' ? 0.05 : 0.14);
+    hi += rawSpan * 0.14;
+
+    const Y = v => pad.t + (H - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
+    const span = hi - lo;
+    const mag = Math.pow(10, Math.floor(Math.log(span / 4) / Math.LN10));
+    const cands = [1, 2, 2.5, 5, 10];
+    let stp = cands[cands.length - 1] * mag;
+    for (let c = 0; c < cands.length; c++){
+      if (span / (cands[c] * mag) <= 7){ stp = cands[c] * mag; break; }
+    }
+    const ticks = [];
+    for (let t = Math.ceil(lo / stp) * stp; t <= hi + stp * 0.001; t += stp) ticks.push(t);
+    const tfmt = v => (v < 0 ? '−' : '') + Math.abs(v).toFixed(stp < 1 ? 1 : 0);
+
+    const inner = W - pad.l - pad.r;
+    const slot = inner / bars.length;
+    const bw = Math.min(104, slot * 0.46);
+
+    const fillOf = bar => {
+      if (bar.total) return 'var(--fg)';
+      if (dpMode === 'level') return bar.id === 'nii' ? 'var(--h5)' : bar.id === 'prov' ? 'var(--neg)' : 'var(--warn)';
+      return bar.v >= 0 ? 'var(--pos)' : 'var(--neg)';
+    };
+
+    /* ghost geometry: same columns, same scale, a wider silhouette behind the bar */
+    const gbw = Math.min(bw + 18, slot * 0.76);
+    const gcx = i => pad.l + slot * i + slot / 2;
+    const plotTop = pad.t, plotBot = H - pad.b;
+    const gRect = bar => {
+      const y0 = Math.min(plotBot, Math.max(plotTop, Y(bar.from)));
+      const y1 = Math.min(plotBot, Math.max(plotTop, Y(bar.to)));
+      return { y: Math.min(y0, y1), h: Math.max(2, Math.abs(y1 - y0)) };
+    };
+    const ghostSvg = !ghost ? '' : `<g class="dwgh" aria-hidden="true">
+      ${ghost.bars.map((bar, i) => {
+        const cx = gcx(i), r = gRect(bar);
+        return `<rect class="dwgh__r" x="${(cx - gbw / 2).toFixed(1)}" y="${r.y.toFixed(1)}" width="${gbw.toFixed(1)}" height="${r.h.toFixed(1)}" rx="1"/>`;
+      }).join('')}
+      ${ghost.bars.slice(1).map((bar, i) => {
+        if (bar.total) return '';
+        const y = Y(ghost.bars[i].to).toFixed(1);
+        return `<line class="dwgh__c" x1="${(gcx(i) + gbw / 2).toFixed(1)}" x2="${(gcx(i + 1) - gbw / 2).toFixed(1)}" y1="${y}" y2="${y}"/>`;
+      }).join('')}
+      ${(() => {
+        /* the ghost's steps are per-column medians, so they do not add to the median
+           bank's own end point — that difference is drawn, never plugged */
+        const last = ghost.bars[ghost.bars.length - 1];
+        const prev = ghost.bars[ghost.bars.length - 2].to;
+        if (!prev || Math.abs(prev - last.to) < 0.15) return '';
+        const x = gcx(ghost.bars.length - 1) - gbw / 2;
+        const y1 = Y(prev), y2 = Y(last.to);
+        return `<line class="dwgh__g" x1="${(x - 4).toFixed(1)}" x2="${(x + 4).toFixed(1)}" y1="${y1.toFixed(1)}" y2="${y1.toFixed(1)}"/>
+          <line class="dwgh__g" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${y1.toFixed(1)}" y2="${y2.toFixed(1)}"/>
+          <line class="dwgh__g" x1="${(x - 4).toFixed(1)}" x2="${(x + 4).toFixed(1)}" y1="${y2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+      })()}
+    </g>`;
+    const ghostAria = !ghost ? '' : ghost.path
+      ? ` Behind it, a ghost path that takes the cohort's median step in each factor from this bank's starting return.`
+      : ` Behind it, a cohort-median ghost: the median of each column across ${ghost.n} filers, with a dotted drop where those medians do not add to the median bank.`;
+
+    const conns = bars.map((bar, i) => {
+      if (!i) return '';
+      const x1 = pad.l + slot * (i - 1) + slot / 2 + bw / 2;
+      const x2 = pad.l + slot * i + slot / 2 - bw / 2;
+      const y = Y(bars[i - 1].to).toFixed(1);
+      return `<line x1="${x1.toFixed(1)}" x2="${x2.toFixed(1)}" y1="${y}" y2="${y}" stroke="var(--border-strong)" stroke-dasharray="2 3"/>`;
+    }).join('');
+
+    const groups = bars.map((bar, i) => {
+      const cx = pad.l + slot * i + slot / 2;
+      const cy0 = Math.min(plotBot, Math.max(plotTop, Y(bar.from)));
+      const cy1 = Math.min(plotBot, Math.max(plotTop, Y(bar.to)));
+      const yTop = Math.min(cy0, cy1);
+      const h = Math.max(2, Math.abs(cy1 - cy0));
+      const on = !!bar.fac && bar.fac === dpSel;
+      const label = bar.total
+        ? (bar.v < 0 ? '−' : '') + Math.abs(bar.v).toFixed(1)
+        : signed(bar.v);
+      const rising = bar.to >= bar.from;
+      const ly = rising
+        ? Math.max(pad.t + 9, yTop - 9)
+        : Math.min(H - pad.b - 4, yTop + h + 15);
+      const lines = wrapWords(bar.l, W < 640 ? 12 : 14);
+      const xl = lines.map((t, j) => `<text x="${cx.toFixed(1)}" y="${(H - pad.b + 19 + j * 12).toFixed(1)}" text-anchor="middle"
+          style="font-family:var(--font-mono); font-size:9px; letter-spacing:.06em; text-transform:uppercase; fill:var(--muted)">${esc(t)}</text>`).join('');
+      const rect = `<rect class="dwb__r" x="${(cx - bw / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="1"
+          fill="${fillOf(bar)}"${bar.solved ? ' fill-opacity=".2" stroke="var(--warn)" stroke-width="1"' : ''}/>`;
+      const hatch = bar.solved
+        ? `<rect x="${(cx - bw / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="url(#dpHatch)" pointer-events="none"/>`
+        : '';
+      return `<g class="dwb" data-i="${i}" data-od-id="dupont-bar-${bar.id}" data-on="${on ? 1 : 0}"${bar.fac ? ' role="button" tabindex="0"' : ''}
+          aria-label="${esc(bar.l)}: ${signed(bar.v)} percentage points">
+        ${rect}${hatch}
+        <text x="${cx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle"
+          style="font-family:var(--font-mono); font-size:12px; font-weight:${bar.total ? 600 : 500}; font-variant-numeric:tabular-nums; fill:var(--fg)">${label}</text>
+        ${xl}
+      </g>`;
+    }).join('');
+
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img"
+        aria-label="${dpMode === 'level'
+          ? 'Waterfall building the return on equity from net interest income, in points of average equity'
+          : 'Waterfall attributing the change in the return on equity; the vertical axis is zoomed to the change'}${ghostAria}">
+      <defs><pattern id="dpHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <line class="dpHatchL" x1="0" y1="0" x2="0" y2="6" stroke-width="1.4"/>
+      </pattern></defs>
+      ${ticks.map(t => `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" stroke="var(--border)"/>
+        <text x="${pad.l - 9}" y="${(Y(t) + 3).toFixed(1)}" text-anchor="end"
+          style="font-family:var(--font-mono); font-size:9px; fill:var(--muted-dim)">${tfmt(t)}</text>`).join('')}
+      ${dpMode === 'level'
+        ? `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="var(--border-strong)"/>`
+        : `<line x1="${pad.l}" x2="${W - pad.r}" y1="${H - pad.b}" y2="${H - pad.b}" stroke="var(--border-strong)"/>`}
+      ${ghostSvg}${conns}${groups}
+    </svg>`;
+
+    host.querySelectorAll('.dwb').forEach(g => {
+      const bar = bars[Number(g.dataset.i)];
+      const pick = () => {
+        if (!bar.fac) return;
+        dpSel = bar.fac;
+        drawDupont();
+        const again = document.querySelector(`#dpFacs .dpFac[data-k="${bar.fac}"]`);
+        if (again) again.focus({ preventScroll: true });
+      };
+      g.addEventListener('click', pick);
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+      g.addEventListener('mousemove', e => {
+        const rows = [`<div class="tr"><span>${bar.total ? 'Level' : 'Contribution'}</span><span>${signed(bar.v)} pp</span></div>`];
+        if (!bar.total && o.roe) rows.push(`<div class="tr"><span>Share of ROE</span><span>${Math.round(bar.v / (o.roe * 100) * 100)}%</span></div>`);
+        if (bar.fac){
+          const f = FACK[bar.fac];
+          rows.push(`<div class="tr"><span>${f.l}</span><span>${f.fmt(f.get(o))}</span></div>`);
+          rows.push(`<div class="tr"><span>Median ${f.l.toLowerCase()}</span><span>${f.fmt(F.median(cohortFac(bar.fac, p)))}</span></div>`);
+        }
+        if (ghost && ghost.map[bar.id] != null)
+          rows.push(`<div class="tr"><span>Ghost, this column</span><span>${signed(ghost.map[bar.id])} pp</span></div>`);
+        F.tip(`<div class="tt">${esc(bar.l)}</div>
+          <div class="ts">${esc(b.name)} · ${qLabel(P[p])}${bar.sub ? ' · ' + esc(bar.sub) : ''}</div>
+          ${rows.join('')}`, e.clientX, e.clientY);
+      });
+      g.addEventListener('mouseleave', F.untip);
+    });
+  }
+
+  function drawRead(o, at, data, b, p, q){
+    const read = document.getElementById('dpRead');
+    const gm = data && data.ghost ? data.ghost.map : null;
+    /* the ghost's own numbers, so the comparison is readable in words and not only in shape */
+    const medTag = k => gm && gm[k] != null ? `ghost median ${signed(gm[k])}pp · ` : '';
+
+    if (dpMode === 'level'){
+      const shareOf = v => (o.roe > 0 ? Math.round(v / (o.roe * 100) * 100) + '% of ROE' : 'not a share of a negative or zero ROE');
+      const items = [
+        { k: 'nim', id: 'nii', l: 'Net interest income', v: o.em * o.nim * 100,
+          s: `the filed margin <b>${pct(o.nim, 2)}</b> on total assets, carried by <b>${o.em.toFixed(1)}×</b> leverage.` },
+        { k: 'cor', id: 'prov', l: 'Provision charge', v: -o.em * o.e * 100,
+          s: `cost of risk <b>${pct(o.cor, 2)}</b> on a book worth <b>${pct(o.w, 1)}</b> of assets — <b>${pct(o.e, 2)}</b> of assets, again carried by ${o.em.toFixed(1)}×.` },
+        { k: 'O', id: 'other', l: 'Other result', v: o.em * o.O * 100, solved: true,
+          s: `solved, not filed: reported ROA <b>${pct(o.roa, 2)}</b> less margin plus the credit charge. Fees, treasury, insurance, operating costs and tax netted, with the average-versus-spot basis inside it.` }
+      ];
+      read.innerHTML = `<h3>What the return is made of</h3>
+        <p class="dpRead__q">${esc(b.name)} · ${q} · points of average equity</p>
+        <ul>${items.map(it => `<li data-on="${dpSel === it.k ? 1 : 0}">
+          <span class="dpRead__n">${it.l} <b class="${dirClass(it.v)}">${pp(it.v / 100, 1)}pp</b></span>
+          <span class="dpRead__s">${it.s}</span>
+          <span class="dpRead__tag">${medTag(it.id)}${it.solved ? 'SOLVED · ' : ''}${shareOf(it.v)}</span>
+        </li>`).join('')}</ul>
+        <p class="footnote dpRead__foot">Leverage sits inside every bar, so it scales the margin and the provision charge at once. A 20× multiplier is not free: it enlarges the drag exactly as much as the income.</p>`;
+      return;
+    }
+
+    if (!at || at.blocked){
+      const msg = !at ? 'The identity is incomplete in one of the two quarters, so no change is attributed.'
+        : at.blocked === 'split' ? `The harness splits this bank’s series at ${at.split.map(qLabel).join(', ')} — a structural break in the filing.`
+        : at.blocked === 'start' ? 'This is the first quarter in the window: there is nothing earlier to change from.'
+        : 'The identity is incomplete in one of the two quarters, so no change is attributed.';
+      read.innerHTML = `<h3>Why the bars are blank</h3>
+        <p class="dpRead__q">${esc(b.name)} · ${q}</p>
+        <p class="dpRead__s" style="margin-top:10px">${esc(msg)} Each contribution is measured against the previous filing on its own terms; across a join those terms change, so the change is not computed — the same rule that blanks growth on the peer matrix and the credit series.</p>
+        <p class="footnote dpRead__foot">Move the quarter, pick another window, or read the level instead. Nothing here is interpolated.</p>`;
+      return;
+    }
+
+    const from = at.o, to = at.n;
+    const phrase = {
+      margin: `twelve-month NIM went <b>${pct(from.nim, 2)} → ${pct(to.nim, 2)}</b>.`,
+      cor: `provisions over the credit book went <b>${pct(from.cor, 2)} → ${pct(to.cor, 2)}</b>.`,
+      mix: `the credit book’s share of assets went <b>${pct(from.w, 1)} → ${pct(to.w, 1)}</b>, which re-prices the whole credit charge.`,
+      other: `the solved residual went <b>${pct(from.O, 2)} → ${pct(to.O, 2)}</b> of assets.`,
+      lev: `implied average leverage went <b>${from.em.toFixed(1)}× → ${to.em.toFixed(1)}×</b>.`
+    };
+    const items = MSET.map(x => ({ k: x.id, fac: x.fac, l: x.l, v: at.cm[x.id] * 100 }))
+      .sort((a, z) => Math.abs(z.v) - Math.abs(a.v)).slice(0, 3);
+    const isOn = f => dpSel === f;
+
+    read.innerHTML = `<h3>What moved the return</h3>
+      <p class="dpRead__q">${esc(b.name)} · ${qLabel(P[p - dpStep])} → ${q}</p>
+      <ul>${items.map(it => `<li data-on="${isOn(it.fac) ? 1 : 0}">
+        <span class="dpRead__n">${it.l} <b class="${dirClass(it.v)}">${pp(it.v / 100, 1)}pp</b></span>
+        <span class="dpRead__s">${phrase[it.k]}</span>
+        ${gm && gm[it.k] != null ? `<span class="dpRead__tag">ghost median ${signed(gm[it.k])}pp</span>` : ''}
+      </li>`).join('')}</ul>
+      <p class="footnote dpRead__foot">Ranked by size. The other two lines are in the waterfall beside this.</p>`;
+  }
+
+  function drawDupont(){
+    const b = bank(), p = F.state.p, q = qLabel(P[p]);
+    const o = F.dupont(b, p);
+    const at = F.dupontAttr(b, p, dpStep);
+    const top = document.getElementById('dpTop');
+    const facs = document.getElementById('dpFacs');
+    const cap = document.getElementById('dpCap');
+    const foot = document.getElementById('dpFoot');
+
+    document.getElementById('segStep').style.display = dpMode === 'move' ? '' : 'none';
+    document.querySelectorAll('#segMode button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.m === dpMode)));
+
+    if (!o){
+      top.innerHTML = '';
+      document.getElementById('dpWf').innerHTML = '';
+      document.getElementById('dpRead').innerHTML = '';
+      document.getElementById('dpCap').innerHTML = '';
+      foot.textContent = '';
+      const miss = F.dupontMissing(b, p);
+      const why = miss.length
+        ? `${esc(b.name)} does not file ${esc(miss.join(', '))} in ${q}, so the identity cannot be built for this quarter. Left blank — the desk does not estimate a missing input.`
+        : `${esc(b.name)} reports a return on assets of ${pct(F.val(b, 'roa', p), 2)} in ${q}. ROE ÷ ROA is not a leverage multiple at a loss, and the desk does not relabel a negative multiplier as gearing, so the identity is left blank for this quarter.`;
+      facs.innerHTML = `<div class="dpMiss" style="grid-column:1/-1; border:0; padding:16px 0">${why}</div>`;
+      return;
+    }
+
+    const d = at.blocked ? null : at.delta;
+    top.innerHTML = `<div class="dpBig">
+        <span class="dpBig__k">Return on equity · 12M · ${q}</span>
+        <span class="dpBig__v" data-lin="roe:${b.id}:${P[p]}" tabindex="0" role="button" aria-label="ROE lineage">${pct(o.roe, 1).replace('%', '')}<small>%</small></span>
+        <span class="dpBig__d ${d == null ? 'flat' : dirClass(d)}">${d == null ? 'change not computed' : pp(d, 2) + ' pp · ' + (dpStep === 1 ? 'QoQ' : '4Q')}</span>
+      </div>
+      <div class="dpId">
+        <div class="dpId__f">ROE = leverage × ( margin − credit charge + other )</div>
+        <div class="dpId__n">${pct(o.roe, 1)}<i>=</i><b>${o.em.toFixed(1)}</b><i>× (</i><b>${pct(o.nim, 2)}</b><i>−</i><b>${pct(o.e, 2)}</b><i>${o.O < 0 ? '−' : '+'}</i><b>${pct(Math.abs(o.O), 2)}</b> )</div>
+        <div class="dpId__c">The bracket is reported ROA, ${pct(o.roa, 2)}: the filed margin, less the credit charge on total assets, plus the residual. The multiplier is the one the two reported ratios imply — twelve-month averages against quarter-end balances, not spot assets ÷ equity.</div>
+      </div>`;
+
+    facs.innerHTML = FAC.map(f => facCell(f.k, o, p)).join('');
+    facs.querySelectorAll('.dpFac').forEach(el => {
+      el.addEventListener('click', () => {
+        dpSel = el.dataset.k;
+        drawDupont();
+        const again = document.querySelector(`#dpFacs .dpFac[data-k="${el.dataset.k}"]`);
+        if (again) again.focus({ preventScroll: true });
+      });
+    });
+
+    const data = wfData(o, at);
+    drawWf(o, at, data);
+    drawRead(o, at, data, b, p, q);
+
+    cap.innerHTML = `<b>${FACK[dpSel].l}</b> — ${DEFS[dpSel](o)} <span style="color:var(--muted-dim)">Cohort medians: ${FAC.map(f => f.l.toLowerCase() + ' ' + f.fmt(F.median(cohortFac(f.k, p)))).join(' · ')}. Ranks count down from the highest value, not from the best.</span>`;
+
+    if (dpMode === 'level'){
+      const brk = [];
+      if (F.QA) [['cr', 'credit book'], ['nim', 'margin']].forEach(f => {
+        if (F.QA.crosses(f[0], b.id, p)) brk.push(f[1]);
+      });
+      const warn = brk.length
+        ? ` <b style="color:var(--warn)">Read with care:</b> the ${brk.join(' and ')} re-defines at this quarter and the register flags the join, so these bars are arithmetic on a redefined input, not a like-for-like reading.`
+        : '';
+      const gh = data && data.ghost;
+      const ghostTxt = gh
+        ? ` The ghost is the cohort median of each column across <b>${gh.n}</b> filers — not a bank assembled out of medians, which is why its steps add to ${pp(gh.bars[gh.bars.length - 2].to / 100, 1)}pp while the median bank earns ${pct(gh.total / 100, 1)}. The dotted drop at the closing column holds that ${pp(Math.abs(gh.gap) / 100, 1)}pp apart instead of letting a plug absorb it.`
+        : '';
+      foot.innerHTML = `The three bars sum to the reported ROE by construction — <b>${pp(o.roe, 2)} pp</b> of average equity — because “other result” is solved to reported ROA rather than assumed; the hatched bar is the solved one. Vertical axis in percentage points of average equity.${ghostTxt}${warn}`;
+    } else if (at.blocked){
+      foot.innerHTML = at.blocked === 'start'
+        ? `This is the first quarter in the window, so there is no earlier filing to change from. Move the stepper forward.`
+        : at.blocked === 'split'
+          ? `Change is not attributed across a series join: the harness splits the series at ${at.split.map(qLabel).join(', ')} — the same rule that blanks growth on the peer matrix.`
+          : `One of the two quarters is incomplete, so no change is attributed. Nothing is interpolated to fill the gap.`;
+    } else {
+      const all = cohort().map(x => F.dupontAttr(x, p, dpStep));
+      const okAttr = all.filter(a => a && !a.blocked).map(a => a.delta);
+      const blocked = all.filter(a => a && a.blocked === 'split').length;
+      const gh = data && data.ghost;
+      const ghostTxt = gh
+        ? ` The ghost repeats the five steps at their cohort medians over <b>${gh.n}</b> filers that attribute cleanly, anchored where this bank started: a quarter that moved like the median bank would have gone <b>${pct(at.o.roe, 1)} → ${pct(gh.total / 100, 1)}</b>, against the reported ${pct(at.n.roe, 1)}.`
+        : '';
+      foot.innerHTML = `Five contributions under the midpoint convention — ΔA × average B + average A × ΔB — sum to <b>${pp(at.delta, 2)} pp</b>, the reported change, with no plug. Cohort this window: median <b>${pp(F.median(okAttr), 2)} pp</b> across ${okAttr.length} filers${blocked ? `, with ${blocked} blocked at a series join` : ''}.${ghostTxt} The axis is zoomed to the change, so the two ROE columns run to the floor.`;
+    }
+  }
+
+  /* ---------- table ---------- */
+  const VIEWS = {
+    flows: {
+      cols: [
+        { k: 'name', l: 'Institution', cls: 'l name', kind: 'name', get: b => b.name },
+        { k: 'nii', l: 'NII', kind: 'money', get: (b, pl) => pl.nii },
+        { k: 'prov', l: 'Provisions', kind: 'money', get: (b, pl) => pl.prov },
+        { k: 'pre', l: 'Before other', kind: 'money', get: (b, pl) => pl.pre },
+        { k: 'other', l: 'Other result', kind: 'money', get: (b, pl) => pl.other },
+        { k: 'ni', l: 'Net income', kind: 'money', get: (b, pl) => pl.ni },
+        { k: 'rni', l: 'NI / assets', kind: 'pct', get: (b, pl) => pl.rni },
+        { k: 'eff', l: 'Efficiency', kind: 'pct', get: b => b.eff[F.state.p] }
+      ]
+    },
+    dupont: {
+      cols: [
+        { k: 'name', l: 'Institution', cls: 'l name', kind: 'name', get: b => b.name },
+        { k: 'w', l: 'Credit share', kind: 'pct1', tip: 'Credit book ÷ total assets', get: (b, pl, d) => d ? d.w : null },
+        { k: 'nim', l: 'Margin', kind: 'pct2', tip: 'Filed twelve-month net interest margin', get: (b, pl, d) => d ? d.nim : null },
+        { k: 'cor', l: 'Cost of risk', kind: 'pct2', tip: 'Provisions ÷ credit book', get: (b, pl, d) => d ? d.cor : null },
+        { k: 'e', l: 'Credit cost', kind: 'pct2', tip: 'Cost of risk × credit share — the charge on total assets', get: (b, pl, d) => d ? d.e : null },
+        { k: 'O', l: 'Other / assets', kind: 'pct2', tip: 'Solved residual: ROA − margin + credit cost', get: (b, pl, d) => d ? d.O : null },
+        { k: 'roa', l: 'ROA', kind: 'pct2', tip: 'Reported return on assets', get: (b, pl, d) => d ? d.roa : null },
+        { k: 'em', l: 'Leverage', kind: 'x', tip: 'ROE ÷ ROA — the implied average-balance multiplier', get: (b, pl, d) => d ? d.em : null },
+        { k: 'roe', l: 'ROE', kind: 'pct1', tip: 'Reported return on equity', get: (b, pl, d) => d ? d.roe : null }
+      ]
+    }
+  };
+  let view = 'flows';
+  let sortK = 'ni', sortDir = -1;
+  const cols = () => VIEWS[view].cols;
+
+  function rowData(){
+    const p = F.state.p, C = cols();
+    return cohort().map(b => {
+      const pl = F.pnl(b, p), d = F.dupont(b, p);
+      return { b, pl, d, vals: C.map(c => c.get(b, pl, d)) };
+    }).filter(r => r.pl.ni != null);
+  }
+
+  const fmtCell = (c, v) => {
+    if (c.kind === 'name') return esc(v);
+    if (v == null) return '—';
+    if (c.kind === 'money') return unit === 'bn' ? bn(v) : pct(v);
+    if (c.kind === 'x') return v.toFixed(1) + '×';
+    if (c.kind === 'pct2') return pct(v, 2);
+    return pct(v);
+  };
+
+  function renderTable(){
+    const p = F.state.p, C = cols();
+    const head = document.getElementById('plHead');
+    head.innerHTML = C.map(c => `<th class="${c.cls || ''} ${c.k === 'name' ? '' : 'sortable'}" data-k="${c.k}"
+      ${c.tip ? `title="${esc(c.tip)}"` : ''}${sortK === c.k ? ` aria-sort="${sortDir < 0 ? 'descending' : 'ascending'}"` : ''}>${c.l}</th>`).join('');
+    head.querySelectorAll('th.sortable').forEach(th => {
+      th.onclick = () => {
+        if (sortK === th.dataset.k) sortDir *= -1; else { sortK = th.dataset.k; sortDir = -1; }
+        renderTable();
+      };
+    });
+
+    let ia = C.findIndex(c => c.k === sortK);
+    if (ia < 0) ia = C.length - 1;
+    const rows = rowData().sort((a, z) => {
+      const va = a.vals[ia], vz = z.vals[ia];
+      if (typeof va === 'string' || typeof vz === 'string') return String(va).localeCompare(String(vz)) * sortDir;
+      return ((va == null ? -Infinity : va) - (vz == null ? -Infinity : vz)) * sortDir;
+    });
+
+    document.querySelector('#plTbl tbody').innerHTML = rows.map(r => `<tr data-id="${r.b.id}" ${r.b.id === bankId ? 'data-sel="1"' : ''}>
+      ${C.map((c, i) => `<td class="${c.cls || ''}">${fmtCell(c, r.vals[i])}</td>`).join('')}
+    </tr>`).join('');
+
+    document.querySelectorAll('#plTbl tbody tr').forEach(tr => {
+      tr.onclick = () => setBank(tr.dataset.id);
+    });
+
+    const foot = document.getElementById('plFoot');
+    if (view === 'flows'){
+      const sum = k => rows.reduce((s, r) => s + (r.pl[k] || 0), 0);
+      const f = v => unit === 'bn' ? bn(v) : '—';
+      foot.innerHTML = `<tr>
+        <td class="l">${rows.length} institutions · ${unit === 'bn' ? 'R$ bn, 12M' : '% of assets'}</td>
+        <td>${f(sum('nii'))}</td><td>${f(sum('prov'))}</td><td>${f(sum('pre'))}</td>
+        <td>${f(sum('other'))}</td><td>${f(sum('ni'))}</td>
+        <td>${pct(F.median(rows.map(r => r.pl.rni)))}</td>
+        <td>${pct(F.median(rows.map(r => F.val(r.b, 'eff', p))))}</td>
+      </tr>`;
+    } else {
+      foot.innerHTML = `<tr>
+        <td class="l">${rows.length} institutions · cohort median · 12M</td>
+        ${C.slice(1).map((c, i) => `<td>${fmtCell(c, F.median(rows.map(r => r.vals[i + 1])))}</td>`).join('')}
+      </tr>`;
+    }
+  }
+
+  document.querySelectorAll('#segView button').forEach(btn => {
+    btn.onclick = () => {
+      view = btn.dataset.v;
+      document.querySelectorAll('#segView button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === view)));
+      sortK = view === 'flows' ? 'ni' : 'roe';
+      sortDir = -1;
+      renderTable();
+    };
+  });
+  document.querySelectorAll('#segStep button').forEach(btn => {
+    btn.onclick = () => {
+      dpStep = Number(btn.dataset.s);
+      document.querySelectorAll('#segStep button').forEach(x => x.setAttribute('aria-pressed', String(Number(x.dataset.s) === dpStep)));
+      drawDupont();
+    };
+  });
+  document.querySelectorAll('#segMode button').forEach(btn => {
+    btn.onclick = () => {
+      dpMode = btn.dataset.m;
+      try { localStorage.setItem('faro.dupont.mode', dpMode); } catch (e) {}
+      drawDupont();
+    };
+  });
+
+  const ghostBtn = document.getElementById('ghostBtn');
+  const syncGhost = () => {
+    if (!ghostBtn) return;
+    ghostBtn.setAttribute('aria-pressed', String(ghostOn));
+    ghostBtn.title = ghostOn
+      ? 'Cohort median of each column, drawn behind this bank’s bars. Click to hide.'
+      : 'Cohort ghost hidden. Click to show the median of each column behind the bars.';
+  };
+  if (ghostBtn) ghostBtn.onclick = () => {
+    ghostOn = !ghostOn;
+    try { localStorage.setItem('faro.dupont.ghost', ghostOn ? '1' : '0'); } catch (e) {}
+    syncGhost();
+    drawDupont();
+  };
+  syncGhost();
+
+  document.getElementById('export').onclick = () => {
+    const p = F.state.p;
+    if (view === 'dupont'){
+      const head = ['Institution', 'Type', 'Period', 'Credit share', 'NIM 12M', 'Cost of risk', 'Credit cost % assets', 'Other result % assets', 'ROA', 'Leverage (x)', 'ROE'];
+      const body = cohort().map(b => {
+        const d = F.dupont(b, p);
+        return [b.name, b.cat, qLabel(P[p]), d ? d.w : '', d ? d.nim : '', d ? d.cor : '', d ? d.e : '', d ? d.O : '', d ? d.roa : '', d ? d.em : '', d ? d.roe : ''];
+      });
+      F.csv([head].concat(body), `faro-dupont-${P[p]}.csv`);
+      return;
+    }
+    const head = ['Institution', 'Type', 'NII (R$ bn)', 'Provisions (R$ bn)', 'Before other costs (R$ bn)', 'Other result (R$ bn)', 'Net income (R$ bn)', 'NI / assets', 'NIM', 'Cost of risk', 'Efficiency', 'Period'];
+    const body = cohort().map(b => {
+      const pl = F.pnl(b, p);
+      return [b.name, b.cat, pl.nii, pl.prov, pl.pre, pl.other, pl.ni, pl.rni, F.val(b, 'nim', p), F.val(b, 'cor', p), F.val(b, 'eff', p), qLabel(P[p])];
+    });
+    F.csv([head].concat(body), `faro-income-bridge-${P[p]}.csv`);
+  };
+
+  function renderAll(){ renderHead(); drawBridge(); drawStrip(); drawSide(); drawScatter(); drawDupont(); renderTable(); }
+
+  F.on('period', () => { if (F.state.b !== bankId) bankId = F.state.b; renderAll(); });
+  F.on('universe', renderAll);
+  F.on('basket', renderAll);
+  F.on('bank', () => { if (F.state.b !== bankId) bankId = F.state.b; renderAll(); });
+
+  renderSelect();
+  renderAll();
+  let t;
+  window.addEventListener('resize', () => {
+    clearTimeout(t);
+    t = setTimeout(() => { drawBridge(); drawScatter(); drawDupont(); }, 150);
+  });
+})();
+</script>
+</body>
+</html>

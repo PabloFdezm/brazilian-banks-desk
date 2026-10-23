@@ -1,0 +1,455 @@
+{
+  "generated": "2026-10-20T22:56:01.782Z",
+  "selection": "report 5 (capital), prudential conglomerates, 34 desk institutions + 4 warm-up quarters",
+  "files": {
+    "dados202212_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202212%2Fdados202212_5.json",
+      "bytes": 287814,
+      "sha256": "7da2a02fa6fb0ce54fc34c87fa0f9a8ce57b0cb375ec82b993ea935fb1500327",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202303_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202303%2Fdados202303_5.json",
+      "bytes": 285215,
+      "sha256": "902a4d28a2a84ecfbdbfe14af0220babd64dd255d66dc8348a888e6cf1967807",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202306_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202306%2Fdados202306_5.json",
+      "bytes": 287904,
+      "sha256": "7e61f68919aaf6dcc14f248eae09bb0ff6488530302af63c371d361b0d38ab4c",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202309_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202309%2Fcadastro202309_1009.json",
+      "bytes": 609956,
+      "sha256": "0d4f65635e5a8d00f6adceb4141eedda5f5025b77ef5f5c67ca2a225a95b12b8",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202309_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202309%2Fdados202309_5.json",
+      "bytes": 337120,
+      "sha256": "6bc29a4032afa9246d9df756bd9265a196ed47fff0e6b7272c7c5531276c4ef2",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202312_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202312%2Fcadastro202312_1009.json",
+      "bytes": 610395,
+      "sha256": "f01b9d12698739ae7604d67c7ff4715864359097e185c85da12ad325e1b4724e",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202312_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202312%2Fdados202312_5.json",
+      "bytes": 337814,
+      "sha256": "65ec8241710a54fecc511b2739884559e4819d939125f9391b057410a3744fc6",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202403_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202403%2Fcadastro202403_1009.json",
+      "bytes": 613953,
+      "sha256": "6d5ca3a719e15f32d8a350f93f56297a3726234a9654c200fed87cb593f84c91",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202403_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202403%2Fdados202403_5.json",
+      "bytes": 339217,
+      "sha256": "3ea89b1aa259a95590c74966782de3af82993a2c54d70dbb109d579cfba8d446",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202406_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202406%2Fcadastro202406_1009.json",
+      "bytes": 613265,
+      "sha256": "fe55a826a0f9e0e9ce229c73961ac124bb59b30f4e35b1bb11af546f6690fd73",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202406_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202406%2Fdados202406_5.json",
+      "bytes": 339644,
+      "sha256": "cce559135568af83859bb9cf5febf7f8faf0fe3ad25cb04986361d0ad330294d",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202409_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202409%2Fcadastro202409_1009.json",
+      "bytes": 616723,
+      "sha256": "298ea1071a3c054ce2a78ffba11435568273ad159c513e328dcff8fe053dcf66",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202409_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202409%2Fdados202409_5.json",
+      "bytes": 343274,
+      "sha256": "c65c36f84990c26145605ac819d70db3aa9ab765404a2500ae29fcf98d82cfb9",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202412_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202412%2Fcadastro202412_1009.json",
+      "bytes": 706911,
+      "sha256": "9ce0bedccf66db29b665c417817fd03ea4e49c2f3ed0980eb66412dcae990c1f",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202412_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata%2F%2F202412%2Fdados202412_5.json",
+      "bytes": 424102,
+      "sha256": "3d799d69af4a07ecf031b831946ae8c2c4d428546aee31fc4af356f201812f6c",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202503_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202503%2Fcadastro202503_1009.json",
+      "bytes": 717454,
+      "sha256": "fbee4194d56185178522c8f8e02847a3621b0da5e47c5b61f847144c83fd9587",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202503_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202503%2Fdados202503_5.json",
+      "bytes": 724278,
+      "sha256": "476a6a88d43860492313a4cdc1f0eb6ae8a4505b6dca2c40d7e55e2ecd7d2779",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202506_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202506%2Fcadastro202506_1009.json",
+      "bytes": 717786,
+      "sha256": "da6c74e519beed9dbc7405afad9517dedf100cbe244128b1cc5c49a2284cb445",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202506_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202506%2Fdados202506_5.json",
+      "bytes": 696691,
+      "sha256": "f735236644633abd807618784bf210e76ecbb08dcaa0e4011c1a7649665821c8",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202509_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202509%2Fcadastro202509_1009.json",
+      "bytes": 721375,
+      "sha256": "547280d707ee8f6313439528eda97fdb5741a4a252e37eed1abd85dc205d660a",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202509_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202509%2Fdados202509_5.json",
+      "bytes": 708876,
+      "sha256": "2f7098ce96f013eba65933c8ab2286cd8c9b0f3946798e6e55411443d78f568f",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202512_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202512%2Fcadastro202512_1009.json",
+      "bytes": 735923,
+      "sha256": "3bca620bdcf0c02de3c0eeab05e5e3a687f18a44893252dd40e5e914299fb53f",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202512_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202512%2Fdados202512_5.json",
+      "bytes": 689672,
+      "sha256": "bcf3e48faa92bcc388c74f35bc744407f3dd84ee8b662b129fb4e81bc0099db5",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202603_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202603%2Fcadastro202603_1009.json",
+      "bytes": 730761,
+      "sha256": "8467c4efa2c945ff15db0b35d3be1a3377e6e329c22f4750f12912abe153da1b",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202603_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202603%2Fdados202603_5.json",
+      "bytes": 743859,
+      "sha256": "3318e2ca3f217cfefbb05c7cae3519c8629e6f4217b343d1b86c406b493cfde9",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "cadastro202606_1009.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202606%2Fcadastro202606_1009.json",
+      "bytes": 742446,
+      "sha256": "16894c0d6a6ddb6ec62df8c79de3ff2db91edd5c3d03ea3661551c9f32653a52",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    },
+    "dados202606_5.json": {
+      "url": "https://www3.bcb.gov.br/ifdata/rest/arquivos?nomeArquivo=ifdata_2025_2030%2F%2F202606%2Fdados202606_5.json",
+      "bytes": 1073613,
+      "sha256": "a2b28dff2b82883135326c74a8bcb477b5937379da8b17a8d964c0934c07c3ad",
+      "cached": true,
+      "stale": false,
+      "retrieved": "2026-10-20T22:56:01.782Z"
+    }
+  },
+  "checks": {
+    "ratioRecomputedMaxErr": 0.00000349,
+    "ratioPoints": 425,
+    "orderFailures": 0,
+    "missingPoints": 17,
+    "structuralJumps": 14,
+    "repeatPrints": 1,
+    "filesMissing": 7
+  },
+  "coverage": {
+    "202306": {
+      "banks": 26,
+      "raroc": 0
+    },
+    "202309": {
+      "banks": 33,
+      "raroc": 0
+    },
+    "202312": {
+      "banks": 33,
+      "raroc": 26
+    },
+    "202403": {
+      "banks": 33,
+      "raroc": 26
+    },
+    "202406": {
+      "banks": 33,
+      "raroc": 26
+    },
+    "202409": {
+      "banks": 33,
+      "raroc": 33
+    },
+    "202412": {
+      "banks": 34,
+      "raroc": 33
+    },
+    "202503": {
+      "banks": 34,
+      "raroc": 33
+    },
+    "202506": {
+      "banks": 34,
+      "raroc": 32
+    },
+    "202509": {
+      "banks": 34,
+      "raroc": 32
+    },
+    "202512": {
+      "banks": 33,
+      "raroc": 32
+    },
+    "202603": {
+      "banks": 33,
+      "raroc": 32
+    },
+    "202606": {
+      "banks": 32,
+      "raroc": 32
+    }
+  },
+  "gaps": [
+    {
+      "id": "C0084693",
+      "name": "Nubank",
+      "quarters": 12
+    },
+    {
+      "id": "C0084820",
+      "name": "Mercado Pago",
+      "quarters": 12
+    },
+    {
+      "id": "C0084710",
+      "name": "Cielo",
+      "quarters": 12
+    },
+    {
+      "id": "C0084813",
+      "name": "PagSeguro",
+      "quarters": 12
+    },
+    {
+      "id": "C0084686",
+      "name": "Stone",
+      "quarters": 12
+    },
+    {
+      "id": "C0088022",
+      "name": "PicPay",
+      "quarters": 7
+    },
+    {
+      "id": "C0080903",
+      "name": "Original",
+      "quarters": 12
+    },
+    {
+      "id": "C0086581",
+      "name": "CloudWalk",
+      "quarters": 12
+    },
+    {
+      "id": "C0085702",
+      "name": "Neon",
+      "quarters": 12
+    },
+    {
+      "id": "C0080288",
+      "name": "BRB",
+      "quarters": 10
+    }
+  ],
+  "jumps": [
+    {
+      "id": "C0082475",
+      "q": "202309",
+      "field": "basel",
+      "from": 0.202367159268812,
+      "to": 0.130915015368039
+    },
+    {
+      "id": "C0084710",
+      "q": "202403",
+      "field": "basel",
+      "from": 0.392954659246215,
+      "to": 0.336334448380117
+    },
+    {
+      "id": "C0084710",
+      "q": "202409",
+      "field": "basel",
+      "from": 0.345366466662157,
+      "to": 0.208447195665416
+    },
+    {
+      "id": "C0084710",
+      "q": "202503",
+      "field": "basel",
+      "from": 0.215700242441822,
+      "to": 0.129282383717927
+    },
+    {
+      "id": "C0084813",
+      "q": "202509",
+      "field": "basel",
+      "from": 0.292901088724695,
+      "to": 0.230236986014991
+    },
+    {
+      "id": "C0084813",
+      "q": "202512",
+      "field": "basel",
+      "from": 0.230236986014991,
+      "to": 0.292901088724695
+    },
+    {
+      "id": "C0084813",
+      "q": "202603",
+      "field": "basel",
+      "from": 0.292901088724695,
+      "to": 0.14194540911800974
+    },
+    {
+      "id": "C0088022",
+      "q": "202603",
+      "field": "basel",
+      "from": 0.117388158705492,
+      "to": 0.169046814273056
+    },
+    {
+      "id": "C0086581",
+      "q": "202403",
+      "field": "basel",
+      "from": 0.31764961987497,
+      "to": 0.431285312957341
+    },
+    {
+      "id": "C0086581",
+      "q": "202406",
+      "field": "basel",
+      "from": 0.431285312957341,
+      "to": 0.341416406993673
+    },
+    {
+      "id": "C0086581",
+      "q": "202409",
+      "field": "basel",
+      "from": 0.341416406993673,
+      "to": 0.460600443403226
+    },
+    {
+      "id": "C0086581",
+      "q": "202506",
+      "field": "basel",
+      "from": 0.416875898836785,
+      "to": 0.301574958794631
+    },
+    {
+      "id": "C0086581",
+      "q": "202512",
+      "field": "basel",
+      "from": 0.269158988781858,
+      "to": 0.322691896691137
+    },
+    {
+      "id": "C0085702",
+      "q": "202403",
+      "field": "basel",
+      "from": 0.17537475088428,
+      "to": 0.124888830704969
+    }
+  ],
+  "repeats": [
+    {
+      "id": "C0084813",
+      "q": "202512",
+      "of": "202506",
+      "rwa": 26.85599227169,
+      "pr": 7.86614937516
+    }
+  ],
+  "missingFiles": [
+    "cadastro202206_1009.json",
+    "dados202206_5.json",
+    "cadastro202209_1009.json",
+    "dados202209_5.json",
+    "cadastro202212_1009.json",
+    "cadastro202303_1009.json",
+    "cadastro202306_1009.json"
+  ]
+}

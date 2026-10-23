@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FARO — Capital lab</title>
+<meta name="description" content="Basel ratio, risk-weighted assets, capital headroom and RAROC for 34 Brazilian banking conglomerates, from BCB IF.Data report 5.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .clhead{ border-bottom: 1px solid var(--border); }
+  .clhead__top{ display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; padding: 28px 28px 18px; }
+  .clhead h1{ font-size: clamp(26px, 3vw, 40px); font-weight: 700; letter-spacing: -0.03em; margin: 8px 0 0; max-width: 24ch; }
+  .clhead__meta{ font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); margin-top: 8px; }
+  .clhead__ctl{ margin-left: auto; display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+  .clhead__ctl label{ display: flex; flex-direction: column; gap: 5px; min-width: 220px; }
+  .clhead__ctl select{
+    appearance: none; background: var(--surface); border: 1px solid var(--border); color: var(--fg);
+    height: 30px; padding: 0 26px 0 10px; font-family: var(--font-mono); font-size: 11.5px; border-radius: var(--r); max-width: 280px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 13px) 13px, calc(100% - 9px) 13px;
+    background-size: 4px 4px, 4px 4px; background-repeat: no-repeat;
+  }
+  .clhead__ctl select:hover{ border-color: var(--border-strong); }
+  .clstats{ padding: 0 28px 24px; }
+  .clstats .stats{ grid-template-columns: repeat(6, minmax(0,1fr)); }
+
+  .clgrid{ display: grid; grid-template-columns: minmax(0,1.55fr) minmax(300px,1fr); gap: 1px; background: var(--border); border-top: 1px solid var(--border); }
+  .clgrid > div{ background: var(--bg); padding: 18px 28px 22px; min-width: 0; }
+  .clgrid > aside{ background: var(--surface); padding: 18px 22px; }
+  .scat{ border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); padding: 4px 10px 0; }
+  #scatter .pt{ cursor: pointer; }
+  #scatter .pt:focus-visible{ outline: none; }
+  #scatter .pt:focus-visible circle{ stroke: var(--accent); stroke-width: 2.4; }
+  .axnote{ display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9px; color: var(--muted-dim); padding: 0 8px 8px; }
+
+  .lad{ border-top: 1px solid var(--border); }
+  .lad__head, .lrow{ display: grid; grid-template-columns: 24px minmax(120px,1.1fr) minmax(140px,2.2fr) 58px 62px 74px; gap: 12px; align-items: center; }
+  .lad__head{ padding: 7px 28px; background: var(--surface-2); border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-dim); }
+  .lad__head span:nth-child(n+4){ text-align: right; }
+  .lrow{ width: 100%; padding: 5px 28px; border-bottom: 1px solid var(--border); text-align: left; }
+  .lrow:hover{ background: var(--surface-2); }
+  .lrow[data-sel="1"]{ background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+  .lrow__r{ font-family: var(--font-mono); font-size: 9.5px; color: var(--muted-dim); text-align: right; }
+  .lrow__n{ font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lrow__track{ position: relative; height: 14px; background: var(--surface-2); border-radius: 1px; overflow: hidden; }
+  .lrow__cet1{ position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+  .lrow__at1{ position: absolute; inset: 0 auto 0 0; background: color-mix(in oklch, var(--accent) 30%, var(--surface-3)); }
+  .lrow__floor{ position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--fg); opacity: .55; }
+  .lrow__v{ font-family: var(--font-mono); font-size: 11px; text-align: right; }
+  .lrow__v.below{ color: var(--neg); }
+  .lrow__raroc{ font-family: var(--font-mono); font-size: 10.5px; text-align: right; color: var(--muted); }
+  .lkey{ display: flex; gap: 16px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 9px; color: var(--muted-dim); padding: 8px 28px 0; }
+  .lkey i{ display: inline-block; width: 9px; height: 9px; border-radius: 1px; margin-right: 5px; vertical-align: -1px; }
+
+  .comp{ display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+  .comp__row{ display: grid; grid-template-columns: 78px 1fr 62px; gap: 10px; align-items: center; }
+  .comp__l{ font-size: 11px; color: var(--muted); }
+  .comp__t{ height: 16px; background: var(--surface-2); border-radius: 1px; overflow: hidden; }
+  .comp__b{ height: 100%; background: color-mix(in oklch, var(--accent) 72%, var(--surface)); }
+  .comp__v{ font-family: var(--font-mono); font-size: 10.5px; text-align: right; }
+  .clnote{ font-size: 11.5px; color: var(--muted); line-height: 1.55; }
+  .clnote b{ color: var(--fg); font-weight: 600; }
+  .kv{ display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .kv:last-child{ border-bottom: 0; }
+  .kv__k{ font-size: 11px; color: var(--muted); }
+  .kv__v{ font-family: var(--font-mono); font-size: 11.5px; text-align: right; }
+  .flag{ display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 9px; padding: 1px 5px; border: 1px solid color-mix(in oklch, var(--neg) 45%, var(--border)); color: var(--neg); border-radius: 1px; }
+  .cov{ display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 9.5px; color: var(--muted-dim); margin-top: 10px; }
+  .compWrap{ display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.15fr); gap: 36px; align-items: start; }
+  @media (max-width: 980px){ .compWrap{ grid-template-columns: minmax(0,1fr); gap: 18px; } }
+  .cov b{ color: var(--fg); font-weight: 500; }
+
+  @media (max-width: 1180px){ .clgrid{ grid-template-columns: minmax(0,1fr); } .clgrid > aside{ border-top: 1px solid var(--border); } .clstats .stats{ grid-template-columns: repeat(3, minmax(0,1fr)); } }
+  @media (max-width: 980px){
+    .clhead__top{ padding: 20px 16px 14px; }
+    .clhead__ctl{ width: 100%; margin-left: 0; }
+    .clhead__ctl label{ min-width: 0; width: 100%; }
+    .clhead__ctl select{ max-width: none; width: 100%; }
+    .clstats{ padding: 0 16px 18px; }
+    .clstats .stats{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .clgrid > div{ padding: 14px 16px 18px; }
+    .clgrid > aside{ padding: 14px 16px; }
+    .lad__head, .lrow{ padding-left: 16px; padding-right: 16px; grid-template-columns: 20px minmax(92px,1fr) minmax(80px,1.6fr) 52px; }
+    .lad__head span:nth-child(5), .lad__head span:nth-child(6), .lrow__raroc, .lrow > :nth-child(5){ display: none; }
+    .lkey{ padding-left: 16px; }
+  }
+</style>
+</head>
+<body data-page="capital" data-title="Capital lab" data-kicker="Basel III · IF.Data report 5">
+
+<aside class="rail" id="rail"></aside>
+
+<div class="main">
+  <header class="topbar" id="topbar"></header>
+
+  <main class="content">
+
+    <section class="clhead" data-od-id="capital-head">
+      <div class="clhead__top">
+        <div>
+          <p class="eyebrow">03 · Capital lab · Basel III · <span id="cq">—</span></p>
+          <h1 id="cName">—</h1>
+          <p class="clhead__meta" id="cMeta">—</p>
+        </div>
+        <div class="clhead__ctl">
+          <label>
+            <span class="eyebrow">Institution</span>
+            <select id="bankSel" aria-label="Choose institution"></select>
+          </label>
+        </div>
+      </div>
+      <div class="clstats"><div class="stats" id="stats"></div></div>
+    </section>
+
+    <section data-od-id="capital-trade">
+      <div class="sec" style="padding-bottom:10px">
+        <div class="sec__head" style="margin-bottom:0">
+          <p class="eyebrow">01 · The trade</p>
+          <h2 id="tradeH">Risk density against return on risk capital</h2>
+          <div class="spacer"></div>
+          <div class="seg" id="segY" role="group" aria-label="Vertical axis">
+            <button data-y="raroc" aria-pressed="true">RAROC</button>
+            <button data-y="basel" aria-pressed="false">Basel ratio</button>
+            <button data-y="npl" aria-pressed="false">NPL90</button>
+          </div>
+        </div>
+      </div>
+      <div class="clgrid">
+        <div>
+          <div class="scat">
+            <div class="chart" id="scatter"></div>
+            <div class="axnote"><span>← lighter book</span><span>RWA density · RWA ÷ assets</span><span>heavier book →</span></div>
+          </div>
+          <p class="footnote" style="margin-top:10px">Bubble area is RWA. Rings mark institutions below the 10.5% reference floor. Dashed lines are cohort medians. <span id="scClip"></span> Click a bank to load it into the panels.</p>
+        </div>
+        <aside aria-live="polite">
+          <p class="eyebrow">Reading the selected bank</p>
+          <h3 style="font-size:15px; margin:6px 0 10px" id="selName">—</h3>
+          <p class="clnote" id="selRead">—</p>
+          <div class="kv"><span class="kv__k">RWA density</span><span class="kv__v" id="selDensity">—</span></div>
+          <div class="kv"><span class="kv__k">NPL90</span><span class="kv__v" id="selNpl">—</span></div>
+          <div class="kv"><span class="kv__k">CET1 share of capital</span><span class="kv__v" id="selCet1Share">—</span></div>
+          <div class="kv"><span class="kv__k">Capital above 10.5%</span><span class="kv__v" id="selHead">—</span></div>
+          <div class="kv"><span class="kv__k">RAROC less ROE</span><span class="kv__v" id="selSpread">—</span></div>
+          <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap">
+            <a class="link" id="dossierLink" href="bank-dossier.html">Full dossier <span>→</span></a>
+            <a class="link" id="pnlLink" href="pnl-lab.html">Income bridge <span>→</span></a>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section data-od-id="capital-ladder">
+      <div class="sec" style="padding-bottom:8px">
+        <div class="sec__head" style="margin-bottom:0">
+          <p class="eyebrow">02 · Ladder</p>
+          <h2>Who holds the most loss-absorbing capital</h2>
+          <div class="spacer"></div>
+          <span class="footnote" id="ladNote">—</span>
+        </div>
+      </div>
+      <div class="lad" id="ladder"></div>
+      <div class="lkey">
+        <span><i style="background:var(--accent)"></i>CET1</span>
+        <span><i style="background:color-mix(in oklch, var(--accent) 30%, var(--surface-3))"></i>AT1 + Tier II</span>
+        <span><i style="background:var(--fg); width:1px; height:11px"></i>10.5% reference floor</span>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="capital-composition">
+      <div class="sec__head">
+        <p class="eyebrow">03 · Composition</p>
+        <h2>Where the RWA comes from</h2>
+        <div class="spacer"></div>
+        <span class="footnote" id="compNote">—</span>
+      </div>
+      <div class="compWrap" id="compWrap">
+        <div>
+          <div class="comp" id="comp"></div>
+          <p class="footnote" style="margin-top:12px" id="compFoot">—</p>
+        </div>
+        <div>
+          <div class="chart" id="trend" style="border:1px solid var(--border); border-radius:var(--r); background:var(--surface); padding:6px 8px 0"></div>
+          <div class="axnote" style="padding:0 4px"><span>Basel and CET1 ratio, 13 quarters</span><span>dashed = cohort median Basel</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" data-od-id="capital-table">
+      <div class="sec__head">
+        <p class="eyebrow">04 · Cross-section</p>
+        <h2>Every institution, capital side</h2>
+        <div class="spacer"></div>
+        <button class="btn btn--sm" id="export">Export CSV</button>
+      </div>
+      <div class="toolbar" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px">
+        <label class="field">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="6" cy="6" r="4.2"/><path d="m9.2 9.2 3 3"/></svg>
+          <input id="q" type="search" placeholder="Search institution" aria-label="Search institution">
+        </label>
+        <span class="footnote" id="cov" style="margin-left:auto"></span>
+      </div>
+      <div class="tbl-scroll" style="max-height:600px; overflow-y:auto">
+        <table class="dt" id="tbl">
+          <thead><tr id="head"></tr></thead>
+          <tbody></tbody>
+          <tfoot><tr id="foot"></tr></tfoot>
+        </table>
+      </div>
+      <p class="footnote" style="margin-top:10px">Δ Basel is in percentage points, quarter on quarter. Headroom is PR less 10.5% of RWA — a floor, not the bank's own requirement. RAROC is blank until five quarters of capital exist. NPL90 is the defaulted portfolio as filed, published by IF.Data only from 2025 Q1. Cover is implied provisions (reported coverage × credit book) ÷ that defaulted stock; below 1.00× the provision stock is smaller than the defaulted balance, and the footer prints the median institution, not the aggregate.</p>
+    </section>
+
+    <section class="sec" data-od-id="capital-method">
+      <details class="method">
+        <summary>How this capital view is built — and what it deliberately does not claim</summary>
+        <div class="mbody">
+          <dl class="mgrid">
+            <div><dt>Source</dt><dd>BCB IF.Data, <b>Informações de Capital</b> (report 5), prudential conglomerate scope. Fetched from the portal's REST archive (<code>www3.bcb.gov.br/ifdata</code>) because the OLinda endpoint was returning HTTP 500 for every period during this build. The two services carry the same account codes; 2024 Q4 and 2026 Q1 were reconciled bank by bank against the OLinda extract with zero differences.</dd></div>
+            <div><dt>Reported vs derived</dt><dd>Basel, CET1, Tier I ratios and RWA are filed. PR is filed from 2024 Q4 onward; before that it is <b>derived as Basel × RWA</b>, and each point carries its basis in the data. Nothing is interpolated across a missing quarter.</dd></div>
+            <div><dt>RAROC</dt><dd><b>12M net income ÷ average PR over the five quarter-ends in the window.</b> Net income is after the provision charge, so expected loss is in the numerator; capital is risk-weighted, so risk is in the denominator. Provisions are not added back — that would mix a pre-tax charge with an after-tax profit. This is a return on regulatory risk capital, not a full economic-capital model. Payments institutions can run a very thin capital base, so RAROC can exceed 100%; the scatter caps its axis at 50% and marks the points above it rather than hiding them.</dd></div>
+            <div><dt>Floor</dt><dd>10.5% = 8% minimum + 2.5% conservation buffer. Systemic surcharges (up to 2.5pp for S1/S2) and bank-specific add-ons are <b>not</b> included, so headroom is an upper bound. A bank above the line is not necessarily distributing freely.</dd></div>
+            <div><dt>Defaulted book (NPL90)</dt><dd>Carteira ativa inadimplida arrastada ÷ total da carteira ativa de crédito, per institution, from IF.Data report 130 (SCR, document 3040). It is the defaulted balance still on book — not the provision charge — and it is what makes RAROC readable: a 20% return on a book carrying a 12% default rate is not the same trade as the same return on a 1% book. <b>Published from 2025 Q1 only</b>; earlier quarters are blank rather than approximated from the older AA–H grading.</dd></div>
+            <div><dt>Cover of NPL90</dt><dd>Implied provisions — the reported coverage ratio (provisions ÷ credit) multiplied by the credit book — divided by the SCR defaulted stock. Both numerator and denominator are reconstructed from two filings that do not share a denominator, so it measures <b>provisioning intensity</b>, not a filed coverage ratio, and will not tie to a bank's own disclosure. Below 1.00× the provision stock is smaller than the defaulted balance; that is not proof of under-provisioning, because write-offs, collateral and guarantees sit outside the comparison. Needs a defaulted print, so it starts in 2025 Q1 and is blank before that.</dd></div>
+          </dl>
+          <div class="note">
+            <div class="note__k">What the data cannot say</div>
+            <p><strong>RWA density is a map, not a score.</strong> A mortgage-heavy book carries low risk weights and a wholesale book carries moderate ones; neither is “better” without a return attached. The payments cohort also moves violently: eight institutions have no capital print in 2023 Q2, and Cielo's Basel ratio falls from 21.6% to 12.9% between 2024 Q4 and 2025 Q1 as its RWA base is re-scoped. Those are real prints, not gaps — read level comparisons across that seam with care.</p>
+          </div>
+          <p class="footnote" id="methodCov"></p>
+        </div>
+      </details>
+    </section>
+
+  </main>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/breaks.js"></script>
+<script src="assets/validate.js"></script>
+<script src="assets/capital.js"></script>
+<script src="assets/npl.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  const F = window.Faro, P = F.P, B = F.B, CAP = F.CAP;
+  const { pct, pctNum, bn, pp, dirClass, qLabel, esc, nf } = F.fmt;
+  const $ = id => document.getElementById(id);
+
+  if (!CAP){
+    document.getElementById('stats').innerHTML = '<div class="stat"><div class="stat__l">Capital data</div><div class="stat__v">—</div><div class="stat__m">assets/capital.js not loaded</div></div>';
+    return;
+  }
+
+  const params = new URLSearchParams(location.search);
+  const qb = params.get('b');
+  if (qb && F.byId(qb)) { F.state.b = qb; F.save(); }
+  let bankId = F.byId(F.state.b) ? F.state.b : B[0].id;
+  let yMode = 'raroc';
+  let sort = 'basel', dir = -1, query = '';
+
+  const bank = () => F.byId(bankId) || B[0];
+  const cohort = () => F.list();
+  const cOf = id => F.capOf(id) || {};
+  const cv = (b, k) => F.capVal(b.id, k, F.state.p);
+  const headroom = b => {
+    const pr = cv(b, 'pr'), rwa = cv(b, 'rwa');
+    return pr != null && rwa != null ? pr - CAP.meta.floor * rwa : null;
+  };
+  const belowFloor = b => { const v = cv(b, 'basel'); return v != null && v < CAP.meta.floor; };
+  const baselPrev = b => F.state.p > 0 ? F.capVal(b.id, 'basel', F.state.p - 1) : null;
+  const rarocPrev = b => F.state.p > 0 ? F.capVal(b.id, 'raroc', F.state.p - 1) : null;
+
+  function setBank(id){
+    if (!F.byId(id)) return;
+    bankId = id;
+    try { history.replaceState(null, '', '?b=' + encodeURIComponent(id)); } catch (e) {}
+    F.setBank(id);
+  }
+  $('dossierLink').href = 'bank-dossier.html?b=' + encodeURIComponent(bankId);
+  $('pnlLink').href = 'pnl-lab.html?b=' + encodeURIComponent(bankId);
+
+  /* ---------- select ---------- */
+  function renderSelect(){
+    const sel = $('bankSel'), groups = {};
+    B.forEach(x => { (groups[x.cat] = groups[x.cat] || []).push(x); });
+    sel.innerHTML = Object.keys(groups).map(g => `<optgroup label="${esc(g)}">${groups[g]
+      .sort((a, c) => (F.capVal(c.id, 'rwa', F.state.p) || 0) - (F.capVal(a.id, 'rwa', F.state.p) || 0))
+      .map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}</optgroup>`).join('');
+    sel.value = bankId;
+  }
+  $('bankSel').onchange = e => setBank(e.target.value);
+
+  document.querySelectorAll('#segY button').forEach(btn => {
+    btn.onclick = () => {
+      yMode = btn.dataset.y;
+      document.querySelectorAll('#segY button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.y === yMode)));
+      drawScatter();
+    };
+  });
+
+  /* ---------- header ---------- */
+  function renderHead(){
+    const b = bank(), p = F.state.p;
+    const c = cOf(b.id);
+    $('cq').textContent = qLabel(P[p]);
+    $('cName').textContent = b.name;
+    const basis = c.prBasis ? c.prBasis[p] : null;
+    $('cMeta').textContent = `${b.cat} · BCB ${b.id.slice(1)} · assets ${bn(b.a[p])} bn · capital ${basis === 'derived' ? 'PR derived' : 'PR filed'} · RWA ${bn(cv(b,'rwa'))} bn`;
+    $('selName').textContent = b.name;
+    $('dossierLink').href = 'bank-dossier.html?b=' + encodeURIComponent(b.id);
+    $('pnlLink').href = 'pnl-lab.html?b=' + encodeURIComponent(b.id);
+
+    const basel = cv(b, 'basel'), cet1 = cv(b, 'cet1'), rwa = cv(b, 'rwa'),
+      raroc = cv(b, 'raroc'), pr = cv(b, 'pr'), hr = headroom(b);
+    const npl = F.nplVal(b.id, 'npl90', p);
+    const nplStart = F.NPL ? P.indexOf(F.NPL.meta.firstPeriod) : Number.MAX_SAFE_INTEGER;
+    const medNpl = F.median(cohort().map(x => F.nplVal(x.id, 'npl90', p)).filter(v => v != null));
+    const dBas = basel != null && baselPrev(b) != null ? basel - baselPrev(b) : null;
+    const prevRwa = F.state.p > 0 ? F.capVal(b.id, 'rwa', F.state.p - 1) : null;
+    const dRwa = rwa != null && prevRwa != null ? rwa - prevRwa : null;
+    const roe = F.val(b, 'roe', p);
+    const spread = raroc != null && roe != null ? raroc - roe : null;
+    const cet1Share = cet1 != null && basel ? cet1 / basel : null;
+
+    const cells = [
+      { l: 'Basel ratio', v: basel == null ? '—' : pct(basel, 2), m: `${dBas == null ? '—' : (dBas >= 0 ? '+' : '−') + pctNum(Math.abs(dBas), 2) + ' pp'} QoQ` },
+      { l: 'CET1 ratio', v: cet1 == null ? '—' : pct(cet1, 2), m: cet1Share == null ? '—' : `${pct(cet1Share, 0)} of total capital` },
+      { l: 'RWA', v: rwa == null ? '—' : bn(rwa), unit: 'bn', m: cv(b, 'density') == null ? '—' : `${pct(cv(b, 'density'), 1)} of assets${dRwa == null ? '' : ' · ' + (dRwa >= 0 ? '+' : '−') + bn(Math.abs(dRwa)) + ' bn QoQ'}` },
+      { l: 'RAROC', v: raroc == null ? '—' : pct(raroc, 1), m: spread == null ? 'vs ROE —' : `${spread >= 0 ? '+' : '−'}${pctNum(Math.abs(spread), 1)} pp vs ROE` },
+      { l: 'NPL90', v: npl == null ? '—' : pct(npl, 2), m: npl == null ? (p < nplStart ? 'from 2025 Q1' : 'no credit print') : (medNpl == null ? 'defaulted book' : `${npl - medNpl >= 0 ? '+' : '−'}${pctNum(Math.abs(npl - medNpl), 2)} pp vs median`) },
+      { l: 'Headroom', v: hr == null ? '—' : bn(hr), unit: 'bn', m: hr == null ? '—' : `${pct(hr / cv(b, 'rwa'), 1)} of RWA above 10.5%` }
+    ];
+    $('stats').innerHTML = cells.map(x => `<div class="stat" ${x.l === 'Headroom' && hr != null && hr < 0 ? 'data-neg="1"' : ''}>
+      <div class="stat__l">${x.l}</div>
+      <div class="stat__v">${x.v}${x.unit ? `<small>${x.unit}</small>` : ''}</div>
+      <div class="stat__m">${x.m}</div>
+    </div>`).join('');
+
+    /* narrative panel */
+    const dens = cv(b, 'density');
+    const medDens = F.median(cohort().map(x => F.capVal(x.id, 'density', p)).filter(v => v != null));
+    const read = [];
+    if (basel == null) read.push('No capital print for this institution in this quarter — the panel stays blank rather than estimating.');
+    else {
+      read.push(`Holds <b>${pct(basel, 2)}</b> of capital against RWA, ${belowFloor(b) ? '<b>below</b> the 10.5% reference floor' : `${basel >= 0.18 ? 'well above' : 'above'} that floor`}.`);
+      if (dens != null && medDens != null) read.push(`Its book runs at <b>${pct(dens, 0)}</b> risk density against a cohort median of ${pct(medDens, 0)} — ${dens > medDens + 0.03 ? 'heavier than the cohort, so more of the balance sheet carries risk weight' : dens < medDens - 0.03 ? 'lighter than the cohort, so more of the book sits in low-weight exposure' : 'close to the cohort median'}.`);
+      if (spread != null) read.push(`RAROC is ${spread >= 0 ? 'above' : 'below'} ROE by ${pctNum(Math.abs(spread), 1)}pp: ${spread >= 0 ? 'regulatory capital is smaller than book equity, usually because intangibles and goodwill are deducted from CET1' : 'AT1 and Tier II enlarge the capital base beyond the equity that generates the return'}.`);
+      if (npl != null) read.push(`Carries a <b>${pct(npl, 2)}</b> defaulted book${medNpl == null ? '' : `, ${npl >= medNpl ? 'above' : 'below'} the ${pct(medNpl, 2)} cohort median`}: the return is being earned against that risk, not instead of it.`);
+      else read.push('The defaulted book is only published from 2025 Q1, so earlier quarters show capital without an asset-quality read.');
+    }
+    $('selRead').innerHTML = read.join(' ');
+    $('selDensity').textContent = dens == null ? '—' : pct(dens, 1);
+    $('selNpl').textContent = npl == null ? '—' : `${pct(npl, 2)}${medNpl == null ? '' : ' · ' + (npl >= medNpl ? '+' : '−') + pctNum(Math.abs(npl - medNpl), 2) + ' pp vs median'}`;
+    $('selCet1Share').textContent = cet1Share == null ? '—' : pct(cet1Share, 0);
+    $('selHead').textContent = hr == null ? '—' : `R$ ${bn(hr)} bn`;
+    $('selSpread').textContent = spread == null ? '—' : `${spread >= 0 ? '+' : '−'}${pctNum(Math.abs(spread), 1)} pp`;
+  }
+
+  /* ---------- scatter ---------- */
+  function drawScatter(){
+    const host = $('scatter'), p = F.state.p;
+    const h2 = $('tradeH');
+    if (h2) h2.textContent = yMode === 'raroc' ? 'Risk density against return on risk capital'
+      : yMode === 'basel' ? 'Risk density against the capital held'
+      : 'Risk density against the defaulted book';
+    const yOf = b => yMode === 'raroc' ? F.capVal(b.id, 'raroc', p)
+      : yMode === 'basel' ? F.capVal(b.id, 'basel', p)
+      : F.nplVal(b.id, 'npl90', p);
+    const rows = cohort().map(b => ({
+      b,
+      x: F.capVal(b.id, 'density', p),
+      y: yOf(b),
+      rwa: F.capVal(b.id, 'rwa', p)
+    })).filter(d => d.x != null && d.y != null && d.rwa != null);
+
+    if (!rows.length) {
+      host.innerHTML = `<div class="empty">${yMode === 'npl'
+        ? 'No defaulted print in this quarter — IF.Data only publishes the defaulted book from 2025 Q1.'
+        : 'No institution in this universe reports both a capital ratio and RWA in the quarter.'}</div>`;
+      return;
+    }
+
+    const W = Math.max(340, host.clientWidth || 640), H = 320;
+    const pad = { l: 46, r: 20, t: 16, b: 22 };
+    const xs = rows.map(d => d.x), ys = rows.map(d => d.y);
+    const mx = F.minmax(xs), my = F.minmax(ys);
+    let x0 = Math.max(0, mx.min - 0.06), x1 = Math.min(1.1, mx.max + 0.06);
+    let y0 = yMode === 'basel' ? Math.min(0.09, my.min - 0.01) : yMode === 'npl' ? 0 : Math.min(0.03, my.min - 0.02);
+    // payment institutions can run very thin capital: cap the axis, never the value
+    let y1 = yMode === 'basel' ? my.max + 0.02 : yMode === 'npl' ? my.max + Math.max(0.005, (my.max - my.min) * 0.08) : Math.min(0.5, my.max + 0.02);
+    if (yMode === 'raroc' && my.max <= 0.5) y1 = my.max + 0.02;
+    const over = yMode === 'npl' ? [] : rows.filter(d => d.y > y1);
+    if (x1 - x0 < 0.05) { x0 -= 0.02; x1 += 0.02; }
+    if (y1 - y0 < 0.03) { y0 -= 0.01; y1 += 0.01; }
+    const X = v => pad.l + (W - pad.l - pad.r) * (v - x0) / (x1 - x0);
+    const Y = v => pad.t + (H - pad.t - pad.b) * (1 - (v - y0) / (y1 - y0));
+    const rmax = Math.max(...rows.map(d => d.rwa));
+    const rad = v => 3 + Math.sqrt(v / rmax) * 24;
+    const medX = F.median(xs), medY = F.median(ys);
+
+    const label = [];
+    const placed = [];
+    rows.filter(d => d.rwa > rmax * 0.15).forEach(d => {
+      const cx = X(d.x), cy = Y(d.y), r = rad(d.rwa);
+      const box = { x: cx + r + 4, y: cy - 7, w: d.b.name.length * 5.4, h: 12 };
+      if (box.x + box.w > W - 4) box.x = cx - r - 4 - box.w;
+      if (placed.some(o => box.x < o.x + o.w && box.x + box.w > o.x && box.y < o.y + o.h && box.y + box.h > o.y)) return;
+      placed.push(box);
+      label.push({ d, x: box.x, y: cy + 3 });
+    });
+
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="RWA density against ${yMode === 'raroc' ? 'RAROC' : yMode === 'basel' ? 'Basel ratio' : 'NPL90'}">
+      ${[0, 0.25, 0.5, 0.75, 1].map(t => {
+        const v = y0 + (y1 - y0) * t;
+        return `<line class="gridline" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/>
+          <text x="${pad.l - 8}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end">${pct(v, yMode === 'basel' ? 0 : 1)}</text>`;
+      }).join('')}
+      ${[0, 0.33, 0.66, 1].map(t => {
+        const v = x0 + (x1 - x0) * t;
+        return `<line class="gridline" x1="${X(v).toFixed(1)}" x2="${X(v).toFixed(1)}" y1="${pad.t}" y2="${H - pad.b}"/>
+          <text x="${X(v).toFixed(1)}" y="${H - 6}" text-anchor="middle">${pct(v, 0)}</text>`;
+      }).join('')}
+      <line x1="${X(medX)}" x2="${X(medX)}" y1="${pad.t}" y2="${H - pad.b}" stroke="var(--border-strong)" stroke-dasharray="2 4"/>
+      <line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(medY)}" y2="${Y(medY)}" stroke="var(--border-strong)" stroke-dasharray="2 4"/>
+      ${yMode === 'basel' && CAP.meta.floor > y0 && CAP.meta.floor < y1 ? `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(CAP.meta.floor)}" y2="${Y(CAP.meta.floor)}" stroke="var(--neg)" stroke-dasharray="1 3" opacity=".75"/>
+        <text x="${W - pad.r}" y="${Y(CAP.meta.floor) - 4}" text-anchor="end" fill="var(--neg)">10.5% floor</text>` : ''}
+      ${rows.slice().sort((a, b) => b.rwa - a.rwa).map(d => {
+        const sel = d.b.id === bankId, low = d.b && F.capVal(d.b.id, 'basel', p) < CAP.meta.floor;
+        const cy = Y(Math.min(d.y, y1 * 0.998));
+        return `<g class="pt" data-id="${d.b.id}" tabindex="0" role="button" aria-label="${esc(d.b.name)}">
+          <circle cx="${X(d.x).toFixed(1)}" cy="${cy.toFixed(1)}" r="${rad(d.rwa).toFixed(1)}"
+            fill="${sel ? 'var(--accent)' : 'color-mix(in oklch, var(--fg) 18%, transparent)'}"
+            stroke="${sel ? 'var(--fg)' : low ? 'var(--neg)' : 'var(--muted)'}" stroke-width="${sel ? 1.6 : low ? 1.3 : .7}"/>
+          ${d.y > y1 ? `<path d="M${X(d.x).toFixed(1)},${(cy - rad(d.rwa) - 7).toFixed(1)} l4,-5 l-8,0 z" fill="${sel ? 'var(--accent)' : 'var(--muted)'}"/>` : ''}
+        </g>`;
+      }).join('')}
+      <g class="axis">${label.map(o => `<text x="${o.x.toFixed(1)}" y="${o.y.toFixed(1)}">${esc(F.brief(o.d.b.name))}</text>`).join('')}</g>
+    </svg>`;
+
+    const clip = $('scClip');
+    if (clip) clip.textContent = over.length
+      ? `${over.length} point${over.length === 1 ? '' : 's'} sit above the axis — ${over.slice().sort((a, b) => b.y - a.y).slice(0, 2).map(d => `${F.brief(d.b.name)} at ${pct(d.y, 0)}`).join(', ')}${over.length > 2 ? ' and others' : ''}. Values are not clipped in the tooltip or the table.`
+      : '';
+
+    host.querySelectorAll('.pt').forEach(g => {
+      const b = F.byId(g.dataset.id);
+      const enter = e => {
+        F.tip(`<div class="tt">${esc(b.name)}</div><div class="ts">${esc(b.cat)} · ${qLabel(P[p])}</div>
+          <div class="tr"><span>Basel</span><span>${pct(F.capVal(b.id, 'basel', p), 2)}</span></div>
+          <div class="tr"><span>CET1</span><span>${pct(F.capVal(b.id, 'cet1', p), 2)}</span></div>
+          <div class="tr"><span>RWA density</span><span>${pct(F.capVal(b.id, 'density', p), 1)}</span></div>
+          <div class="tr"><span>RWA</span><span>R$ ${bn(F.capVal(b.id, 'rwa', p))} bn</span></div>
+          <div class="tr"><span>RAROC</span><span>${pct(F.capVal(b.id, 'raroc', p), 1)}</span></div>
+          <div class="tr"><span>NPL90</span><span>${pct(F.nplVal(b.id, 'npl90', p), 2)}</span></div>`, e.clientX, e.clientY);
+      };
+      g.addEventListener('mousemove', enter);
+      g.addEventListener('mouseleave', F.untip);
+      g.addEventListener('click', () => setBank(b.id));
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setBank(b.id); } });
+    });
+  }
+
+  /* ---------- ladder ---------- */
+  function drawLadder(){
+    const p = F.state.p;
+    const rows = cohort().map(b => ({
+      b,
+      basel: F.capVal(b.id, 'basel', p),
+      cet1: F.capVal(b.id, 'cet1', p),
+      raroc: F.capVal(b.id, 'raroc', p)
+    })).filter(d => d.basel != null).sort((a, b) => b.basel - a.basel);
+
+    const MAX = 0.36; // axis stop; above this the bar runs to the end
+    const floor = CAP.meta.floor;
+    const host = $('ladder');
+    if (!rows.length) { host.innerHTML = '<div class="empty" style="padding:24px 28px">No capital prints in this universe for the quarter.</div>'; $('ladNote').textContent = ''; return; }
+
+    host.innerHTML = `<div class="lad__head" aria-hidden="true">
+        <span>#</span><span>Institution</span><span>Basel · CET1 + AT1/T2</span><span>Basel</span><span>RAROC</span><span>Headroom</span>
+      </div>` + rows.map((d, i) => {
+      const total = Math.min(1, d.basel / MAX) * 100;
+      const cet1 = d.cet1 != null ? Math.min(1, d.cet1 / MAX) * 100 : 0;
+      const hr = headroom(d.b);
+      return `<button class="lrow" data-id="${d.b.id}" ${d.b.id === bankId ? 'data-sel="1"' : ''}>
+        <span class="lrow__r">${String(i + 1).padStart(2, '0')}</span>
+        <span class="lrow__n">${esc(d.b.name)}</span>
+        <span class="lrow__track" aria-hidden="true">
+          <span class="lrow__at1" style="width:${total.toFixed(2)}%"></span>
+          <span class="lrow__cet1" style="width:${cet1.toFixed(2)}%"></span>
+          <span class="lrow__floor" style="left:${(floor / MAX * 100).toFixed(2)}%"></span>
+        </span>
+        <span class="lrow__v ${d.basel < floor ? 'below' : ''}">${pct(d.basel, 2)}</span>
+        <span class="lrow__raroc">${pct(d.raroc, 1)}</span>
+        <span class="lrow__v">${hr == null ? '—' : 'R$ ' + bn(hr) + ' bn'}</span>
+      </button>`;
+    }).join('');
+
+    host.querySelectorAll('.lrow').forEach(el => {
+      el.onclick = () => setBank(el.dataset.id);
+    });
+    $('ladNote').textContent = `${rows.length} institutions · sorted by Basel ratio · ${rows.filter(d => d.basel < floor).length} below the floor`;
+  }
+
+  /* ---------- composition + trend ---------- */
+  function drawComposition(){
+    const b = bank(), p = F.state.p;
+    const cr = cv(b, 'rwaCr'), mk = cv(b, 'rwaMkt'), op = cv(b, 'rwaOp'), total = cv(b, 'rwa');
+    const parts = [
+      { l: 'Credit', v: cr },
+      { l: 'Market', v: mk },
+      { l: 'Operational', v: op }
+    ];
+    const known = parts.reduce((s, x) => s + (x.v || 0), 0);
+    const max = Math.max(known, 0.001);
+    $('comp').innerHTML = parts.map(x => `<div class="comp__row">
+        <span class="comp__l">${x.l}</span>
+        <span class="comp__t"><span class="comp__b" style="width:${x.v == null ? 0 : (x.v / max * 100).toFixed(1)}%"></span></span>
+        <span class="comp__v">${x.v == null ? '—' : bn(x.v) + ' bn'}</span>
+      </div>`).join('') + (total != null && known > 0 && Math.abs(known - total) > 0.5 ? `<div class="comp__row">
+        <span class="comp__l">Unallocated</span>
+        <span class="comp__t"><span class="comp__b" style="width:${Math.max(0, (total - known) / max * 100).toFixed(1)}%; background:var(--surface-3)"></span></span>
+        <span class="comp__v">${bn(Math.max(0, total - known))} bn</span>
+      </div>` : '');
+
+    $('compNote').textContent = `${b.name} · ${qLabel(P[p])}`;
+    $('compFoot').textContent = total == null ? 'No RWA print for this quarter.' :
+      `Credit is ${pct(cr / total, 0)} of RWA. RWA density ${cv(b, 'density') == null ? '—' : pct(cv(b, 'density'), 0)} of assets — the same capital number describes very different books.`
+      + (op == null && total - known > 0.5 ? ' Operational RWA is not filed this quarter; it sits in “unallocated”.' : '');
+
+    drawTrend();
+  }
+
+  function drawTrend(){
+    const host = $('trend'), b = bank();
+    const W = Math.max(320, host.clientWidth || 520), H = 210;
+    const pad = { l: 38, r: 12, t: 12, b: 18 };
+    const series = P.map((q, i) => ({ q, v: F.capVal(b.id, 'basel', i), c: F.capVal(b.id, 'cet1', i) }));
+    const med = P.map((q, i) => {
+      const vals = F.list().map(x => F.capVal(x.id, 'basel', i)).filter(v => v != null);
+      return vals.length ? F.median(vals) : null;
+    });
+    const all = series.flatMap(d => [d.v, d.c]).concat(med).filter(v => v != null);
+    if (!all.length) { host.innerHTML = '<div class="empty" style="padding:26px">No series.</div>'; return; }
+    let lo = Math.min(...all), hi = Math.max(...all);
+    lo = Math.max(0, lo - 0.015); hi += 0.015;
+    if (hi - lo < 0.02) { lo -= 0.01; hi += 0.01; }
+    const X = i => pad.l + (W - pad.l - pad.r) * (i / (P.length - 1));
+    const Y = v => pad.t + (H - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
+    const path = key => series.map((d, i) => d[key] == null ? null : `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(d[key]).toFixed(1)}`).filter(Boolean).join(' ');
+    const medPath = med.map((v, i) => v == null ? null : `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean).join(' ');
+
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Basel and CET1 ratio history">
+      ${[0, 0.5, 1].map(t => {
+        const v = lo + (hi - lo) * t;
+        return `<line class="gridline" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/>
+          <text x="${pad.l - 7}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end">${pct(v, 0)}</text>`;
+      }).join('')}
+      ${CAP.meta.floor > lo && CAP.meta.floor < hi ? `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(CAP.meta.floor)}" y2="${Y(CAP.meta.floor)}" stroke="var(--neg)" stroke-dasharray="2 3"/>` : ''}
+      <path d="${medPath}" fill="none" stroke="var(--muted-dim)" stroke-width="1" stroke-dasharray="3 4"/>
+      <path d="${path('v')}" fill="none" stroke="var(--fg)" stroke-width="1.6"/>
+      <path d="${path('c')}" fill="none" stroke="var(--accent)" stroke-width="1.4"/>
+      ${series.map((d, i) => d.v == null ? '' : `<circle cx="${X(i).toFixed(1)}" cy="${Y(d.v).toFixed(1)}" r="${i === F.state.p ? 3 : 1.6}" fill="${i === F.state.p ? 'var(--fg)' : 'var(--surface)'}" stroke="var(--fg)" stroke-width="1"/>`).join('')}
+      ${[0, 4, 8, 12].map(i => `<text x="${X(i).toFixed(1)}" y="${H - 4}" text-anchor="middle">${P[i] ? "'" + P[i].slice(2, 4) : ''}</text>`).join('')}
+    </svg>`;
+  }
+
+  /* ---------- table ---------- */
+  const provOf = (b, i) => {
+    const cv = F.val(b, 'cov', i), cr = F.val(b, 'cr', i);
+    return cv != null && cr != null ? cv * cr : null;
+  };
+  const coverOf = (b, i) => {
+    const pv = provOf(b, i), d = F.nplVal(b.id, 'defd', i);
+    return pv != null && d != null && d > 0 ? pv / d : null;
+  };
+  const mult = v => v == null ? '—' : (v >= 10 ? v.toFixed(1) : v.toFixed(2)) + '×';
+
+  const COLS = [
+    { k: 'name', l: 'Institution', type: 's', sticky: true },
+    { k: 'cat', l: 'Type', type: 's' },
+    { k: 'grade', l: 'Quality', type: 'q' },
+    { k: 'basel', l: 'Basel', type: 'p', dp: 2 },
+    { k: 'cet1', l: 'CET1', type: 'p', dp: 2 },
+    { k: 'tier1', l: 'Tier I', type: 'p', dp: 2 },
+    { k: 'rwa', l: 'RWA bn', type: 'n', dp: 1 },
+    { k: 'density', l: 'Density', type: 'p', dp: 1 },
+    { k: 'npl90', l: 'NPL90', type: 'p', dp: 2 },
+    { k: 'cover', l: 'Cover NPL', type: 'x', dp: 2 },
+    { k: 'raroc', l: 'RAROC', type: 'p', dp: 1 },
+    { k: 'head', l: 'Headroom bn', type: 'n', dp: 1 },
+    { k: 'dbas', l: 'Δ Basel pp', type: 'pp', dp: 2, color: true },
+    { k: 'flag', l: 'Flag', type: 's' }
+  ];
+
+  function tableRows(){
+    const p = F.state.p;
+    return cohort().filter(b => !query || b.name.toLowerCase().includes(query)).map(b => {
+      const sub = CAP.meta.repeats.some(r => r.id === b.id && r.q === P[p]);
+      return {
+        b, name: b.name, cat: b.cat, grade: F.gradeOf(b.id),
+        basel: F.capVal(b.id, 'basel', p), cet1: F.capVal(b.id, 'cet1', p),
+        tier1: F.capVal(b.id, 'tier1', p), rwa: F.capVal(b.id, 'rwa', p),
+        density: F.capVal(b.id, 'density', p), raroc: F.capVal(b.id, 'raroc', p),
+        npl90: F.nplVal(b.id, 'npl90', p),
+        cover: coverOf(b, p), prov: provOf(b, p), defd: F.nplVal(b.id, 'defd', p),
+        head: headroom(b), dbas: baselPrev(b) == null || F.capVal(b.id, 'basel', p) == null ? null : F.capVal(b.id, 'basel', p) - baselPrev(b),
+        flag: sub ? 'repeat' : (F.capVal(b.id, 'basel', p) != null && F.capVal(b.id, 'basel', p) < CAP.meta.floor ? 'below floor' : '')
+      };
+    }).sort((a, b) => {
+      const x = a[sort], y = b[sort];
+      if (typeof x === 'string' || typeof y === 'string') return String(x).localeCompare(String(y)) * dir;
+      if (x == null && y == null) return 0;
+      if (x == null) return 1;
+      if (y == null) return -1;
+      return (x - y) * dir;
+    });
+  }
+
+  function drawTable(){
+    const p = F.state.p;
+    $('head').innerHTML = COLS.map(c => `<th class="sortable ${c.sticky ? 'sticky l' : ''}" data-k="${c.k}" ${sort === c.k ? `aria-sort="${dir === 1 ? 'ascending' : 'descending'}"` : ''}>${c.l}</th>`).join('');
+    const rows = tableRows();
+    document.querySelector('#tbl tbody').innerHTML = rows.map(r => `<tr data-id="${r.b.id}" ${r.b.id === bankId ? 'data-sel="1"' : ''}>${COLS.map(c => {
+      if (c.k === 'name') return `<td class="l name sticky">${esc(r.name)}</td>`;
+      if (c.k === 'cat') return `<td class="l"><span class="type">${esc(r.cat || '—')}</span></td>`;
+      if (c.k === 'grade') { const g = r.grade; return `<td class="l"><span class="qab" data-g="${g.grade}" title="Data quality ${g.grade}">${g.grade}</span></td>`; }
+      if (c.k === 'flag') return `<td class="l">${r.flag ? `<span class="flag">${r.flag}</span>` : '<span style="color:var(--muted-dim)">—</span>'}</td>`;
+      const v = r[c.k];
+      if (v == null) return '<td>—</td>';
+      if (c.type === 'x') return `<td class="${v < 1 ? 'down' : ''}" title="${bn(r.prov)} bn provision stock against ${bn(r.defd)} bn defaulted">${mult(v)}</td>`;
+      if (c.type === 'n') return `<td>${bn(v)}</td>`;
+      if (c.type === 'pp') return `<td class="${c.color ? dirClass(v) : ''}">${(v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(c.dp)}</td>`;
+      return `<td class="${c.k === 'basel' && v < CAP.meta.floor ? 'down' : ''}">${pct(v, c.dp)}</td>`;
+    }).join('')}</tr>`).join('') || `<tr><td colspan="${COLS.length}" class="l" style="padding:26px; text-align:center; color:var(--muted)">No institution matches “${esc(query)}”.</td></tr>`;
+
+    const withCap = rows.filter(r => r.basel != null).length;
+    $('foot').innerHTML = `<td class="l sticky" style="background:var(--surface)">${rows.length} shown · ${withCap} with a capital print</td>
+      <td></td><td></td><td>${pct(F.median(rows.map(r => r.basel).filter(v => v != null)))}</td>
+      <td>${pct(F.median(rows.map(r => r.cet1).filter(v => v != null)))}</td><td></td>
+      <td>${bn(rows.reduce((s, r) => s + (r.rwa || 0), 0))}</td><td></td>
+      <td>${pct(F.median(rows.map(r => r.npl90).filter(v => v != null)), 2)}</td>
+      <td>${mult(F.median(rows.map(r => r.cover).filter(v => v != null)))}</td>
+      <td>${pct(F.median(rows.map(r => r.raroc).filter(v => v != null)))}</td>
+      <td>${bn(rows.reduce((s, r) => s + (r.head || 0), 0))}</td><td></td><td></td>`;
+
+    const withNpl = rows.filter(r => r.npl90 != null).length;
+    const withCover = rows.filter(r => r.cover != null).length;
+    $('cov').textContent = `${withCap} of ${rows.length} institutions report capital · ${withNpl} report a defaulted book · ${withCover} carry a usable cover · ${qLabel(P[p])}`;
+    document.querySelectorAll('#head th').forEach(th => {
+      th.onclick = () => {
+        const k = th.dataset.k;
+        if (k === 'flag') return;
+        if (sort === k) dir *= -1; else { sort = k; dir = k === 'name' || k === 'cat' ? 1 : -1; }
+        drawTable();
+      };
+    });
+    document.querySelectorAll('#tbl tbody tr[data-id]').forEach(tr => {
+      tr.onclick = () => setBank(tr.dataset.id);
+    });
+  }
+
+  /* ---------- export ---------- */
+  $('export').onclick = () => {
+    const p = F.state.p;
+    const head = ['Institution', 'Type', 'Quality', 'Basel %', 'CET1 %', 'Tier I %', 'RWA (R$ bn)', 'RWA density', 'NPL90', 'Defaulted (R$ bn)', 'Cover of NPL90 (x)', 'RAROC', 'PR (R$ bn)', 'Headroom 10.5% (R$ bn)', 'Basel QoQ (pp)', 'PR basis', 'Flag', 'Period'];
+    const body = tableRows().map(r => {
+      const c = cOf(r.b.id);
+      return [r.name, r.cat, r.grade.grade, r.basel, r.cet1, r.tier1, r.rwa, r.density, r.npl90,
+        F.nplVal(r.b.id, 'defd', p), r.cover, r.raroc,
+        c.pr ? c.pr[p] : '', r.head, r.dbas, c.prBasis ? c.prBasis[p] : '', r.flag, qLabel(P[p])];
+    });
+    F.csv([head].concat(body), `faro-capital-${P[p]}.csv`);
+  };
+
+  $('q').addEventListener('input', e => { query = e.target.value.trim().toLowerCase(); drawTable(); });
+
+  /* ---------- render ---------- */
+  function drawAll(){
+    renderSelect();
+    renderHead();
+    drawScatter();
+    drawLadder();
+    drawComposition();
+    drawTable();
+  }
+  F.on('period', drawAll);
+  F.on('universe', drawAll);
+  F.on('basket', drawAll);
+  F.on('bank', () => { bankId = F.byId(F.state.b) ? F.state.b : bankId; drawAll(); });
+
+  const meta = CAP.meta;
+  $('methodCov').textContent = `Coverage: ${meta.checks.ratioPoints} capital points checked · ${meta.checks.missingPoints} missing prints kept as gaps · ${meta.checks.repeatPrints} repeated print${meta.checks.repeatPrints === 1 ? '' : 's'} flagged · ${meta.checks.orderFailures} capital-stack order failures. Files fetched ${meta.retrieved.slice(0, 10)}.`;
+
+  drawAll();
+  let t;
+  window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { drawScatter(); drawTrend(); }, 150); });
+})();
+</script>
+</body>
+</html>
