@@ -7,6 +7,11 @@ Thumbs.db
 *.tmp
 ~$*
 
+# deploy artifact and wrangler state
+dist/
+.wrangler/
+node_modules/
+
 # scratch probes
 _probe.*
 _bal.py
